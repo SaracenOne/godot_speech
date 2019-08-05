@@ -16,6 +16,7 @@ void VoiceManager::_register_methods() {
     register_method("start", &start);
     register_method("stop", &stop);
 
+    register_method("compress_buffer", &compress_buffer);
     register_method("decompress_buffer", &decompress_buffer);
 
     register_signal<VoiceManager>("audio_packet_processed", "packet", GODOT_VARIANT_TYPE_POOL_BYTE_ARRAY);
@@ -38,7 +39,7 @@ void VoiceManager::_mix_audio() {
                 audio_server->unlock();
                 
                 if(current_mix_buffer_position == 0) {
-                    emit_signal("audio_packet_processed", compress_buffer(mix_buffer));
+                    emit_signal("audio_packet_processed", mix_buffer);
                 }
             }
         }
