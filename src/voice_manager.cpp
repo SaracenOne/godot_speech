@@ -185,8 +185,6 @@ void VoiceManager::_ready() {
         audio_server->lock();
         audio_server->connect("audio_mix_callback", this, "_mix_audio");
         audio_server->unlock();
-
-        start();
     }
 }
 
