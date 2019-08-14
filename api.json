@@ -31270,6 +31270,13 @@
 				"index": -1
 			},
 			{
+				"name": "lifetime_randomness",
+				"type": "float",
+				"getter": "get_lifetime_randomness",
+				"setter": "set_lifetime_randomness",
+				"index": -1
+			},
+			{
 				"name": "linear_accel",
 				"type": "float",
 				"getter": "get_param",
@@ -31669,6 +31676,19 @@
 			},
 			{
 				"name": "get_lifetime",
+				"return_type": "float",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+				]
+			},
+			{
+				"name": "get_lifetime_randomness",
 				"return_type": "float",
 				"is_editor": false,
 				"is_noscript": false,
@@ -32209,6 +32229,25 @@
 				"arguments": [
 					{
 						"name": "secs",
+						"type": "float",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
+				"name": "set_lifetime_randomness",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "random",
 						"type": "float",
 						"has_default_value": false,
 						"default_value": ""
@@ -32805,6 +32844,13 @@
 				"index": -1
 			},
 			{
+				"name": "lifetime_randomness",
+				"type": "float",
+				"getter": "get_lifetime_randomness",
+				"setter": "set_lifetime_randomness",
+				"index": -1
+			},
+			{
 				"name": "linear_accel",
 				"type": "float",
 				"getter": "get_param",
@@ -33211,6 +33257,19 @@
 			},
 			{
 				"name": "get_lifetime",
+				"return_type": "float",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+				]
+			},
+			{
+				"name": "get_lifetime_randomness",
 				"return_type": "float",
 				"is_editor": false,
 				"is_noscript": false,
@@ -33764,6 +33823,25 @@
 				"arguments": [
 					{
 						"name": "secs",
+						"type": "float",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
+				"name": "set_lifetime_randomness",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "random",
 						"type": "float",
 						"has_default_value": false,
 						"default_value": ""
@@ -54625,6 +54703,44 @@
 				]
 			},
 			{
+				"name": "set_distraction_free_mode",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "enter",
+						"type": "bool",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
+				"name": "set_main_screen_editor",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "name",
+						"type": "String",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
 				"name": "set_plugin_enabled",
 				"return_type": "void",
 				"is_editor": false,
@@ -62696,6 +62812,25 @@
 				]
 			},
 			{
+				"name": "call_funcv",
+				"return_type": "Variant",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "arg_array",
+						"type": "Array",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
 				"name": "is_valid",
 				"return_type": "bool",
 				"is_editor": false,
@@ -66157,6 +66292,11 @@
 				]
 			},
 			{
+				"name": "copy_nodes_request",
+				"arguments": [
+				]
+			},
+			{
 				"name": "delete_nodes_request",
 				"arguments": [
 				]
@@ -66199,6 +66339,11 @@
 						"type": "Node",
 						"default_value": ""
 					}
+				]
+			},
+			{
+				"name": "paste_nodes_request",
+				"arguments": [
 				]
 			},
 			{
@@ -71307,6 +71452,31 @@
 				"has_varargs": false,
 				"is_from_script": false,
 				"arguments": [
+				]
+			},
+			{
+				"name": "save_exr",
+				"return_type": "enum.Error",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "path",
+						"type": "String",
+						"has_default_value": false,
+						"default_value": ""
+					},
+					{
+						"name": "grayscale",
+						"type": "bool",
+						"has_default_value": true,
+						"default_value": "False"
+					}
 				]
 			},
 			{
@@ -97915,6 +98085,13 @@
 				"index": 0
 			},
 			{
+				"name": "lifetime_randomness",
+				"type": "float",
+				"getter": "get_lifetime_randomness",
+				"setter": "set_lifetime_randomness",
+				"index": -1
+			},
+			{
 				"name": "linear_accel",
 				"type": "float",
 				"getter": "get_param",
@@ -98216,6 +98393,19 @@
 			{
 				"name": "get_gravity",
 				"return_type": "Vector3",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+				]
+			},
+			{
+				"name": "get_lifetime_randomness",
+				"return_type": "float",
 				"is_editor": false,
 				"is_noscript": false,
 				"is_const": true,
@@ -98583,6 +98773,25 @@
 					{
 						"name": "accel_vec",
 						"type": "Vector3",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
+				"name": "set_lifetime_randomness",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "randomness",
+						"type": "float",
 						"has_default_value": false,
 						"default_value": ""
 					}
@@ -109927,6 +110136,24 @@
 				"arguments": [
 				]
 			}
+		],
+		"enums": [
+		]
+	},
+	{
+		"name": "PointMesh",
+		"base_class": "PrimitiveMesh",
+		"api_type": "core",
+		"singleton": false,
+		"instanciable": true,
+		"is_reference": true,
+		"constants": {
+		},
+		"properties": [
+		],
+		"signals": [
+		],
+		"methods": [
 		],
 		"enums": [
 		]
@@ -133722,6 +133949,13 @@
 				"index": -1
 			},
 			{
+				"name": "frame_coords",
+				"type": "Vector2",
+				"getter": "get_frame_coords",
+				"setter": "set_frame_coords",
+				"index": -1
+			},
+			{
 				"name": "hframes",
 				"type": "int",
 				"getter": "get_hframes",
@@ -133794,6 +134028,19 @@
 			{
 				"name": "get_frame",
 				"return_type": "int",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+				]
+			},
+			{
+				"name": "get_frame_coords",
+				"return_type": "Vector2",
 				"is_editor": false,
 				"is_noscript": false,
 				"is_const": true,
@@ -134056,6 +134303,25 @@
 				]
 			},
 			{
+				"name": "set_frame_coords",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "coords",
+						"type": "Vector2",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
 				"name": "set_hframes",
 				"return_type": "void",
 				"is_editor": false,
@@ -134229,6 +134495,13 @@
 				"index": -1
 			},
 			{
+				"name": "frame_coords",
+				"type": "Vector2",
+				"getter": "get_frame_coords",
+				"setter": "set_frame_coords",
+				"index": -1
+			},
+			{
 				"name": "hframes",
 				"type": "int",
 				"getter": "get_hframes",
@@ -134275,6 +134548,19 @@
 			{
 				"name": "get_frame",
 				"return_type": "int",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+				]
+			},
+			{
+				"name": "get_frame_coords",
+				"return_type": "Vector2",
 				"is_editor": false,
 				"is_noscript": false,
 				"is_const": true,
@@ -134364,6 +134650,25 @@
 					{
 						"name": "frame",
 						"type": "int",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
+				"name": "set_frame_coords",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "coords",
+						"type": "Vector2",
 						"has_default_value": false,
 						"default_value": ""
 					}
@@ -153671,6 +153976,13 @@
 		},
 		"properties": [
 			{
+				"name": "brake",
+				"type": "float",
+				"getter": "get_brake",
+				"setter": "set_brake",
+				"index": -1
+			},
+			{
 				"name": "damping_compression",
 				"type": "float",
 				"getter": "get_damping_compression",
@@ -153682,6 +153994,20 @@
 				"type": "float",
 				"getter": "get_damping_relaxation",
 				"setter": "set_damping_relaxation",
+				"index": -1
+			},
+			{
+				"name": "engine_force",
+				"type": "float",
+				"getter": "get_engine_force",
+				"setter": "set_engine_force",
+				"index": -1
+			},
+			{
+				"name": "steering",
+				"type": "float",
+				"getter": "get_steering",
+				"setter": "set_steering",
 				"index": -1
 			},
 			{
@@ -153752,6 +154078,19 @@
 		],
 		"methods": [
 			{
+				"name": "get_brake",
+				"return_type": "float",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+				]
+			},
+			{
 				"name": "get_damping_compression",
 				"return_type": "float",
 				"is_editor": false,
@@ -153766,6 +154105,19 @@
 			},
 			{
 				"name": "get_damping_relaxation",
+				"return_type": "float",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+				]
+			},
+			{
+				"name": "get_engine_force",
 				"return_type": "float",
 				"is_editor": false,
 				"is_noscript": false,
@@ -153831,6 +154183,19 @@
 			},
 			{
 				"name": "get_skidinfo",
+				"return_type": "float",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+				]
+			},
+			{
+				"name": "get_steering",
 				"return_type": "float",
 				"is_editor": false,
 				"is_noscript": false,
@@ -153934,6 +154299,25 @@
 				]
 			},
 			{
+				"name": "set_brake",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "brake",
+						"type": "float",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
 				"name": "set_damping_compression",
 				"return_type": "void",
 				"is_editor": false,
@@ -153965,6 +154349,25 @@
 				"arguments": [
 					{
 						"name": "length",
+						"type": "float",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
+				"name": "set_engine_force",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "engine_force",
 						"type": "float",
 						"has_default_value": false,
 						"default_value": ""
@@ -154022,6 +154425,25 @@
 				"arguments": [
 					{
 						"name": "roll_influence",
+						"type": "float",
+						"has_default_value": false,
+						"default_value": ""
+					}
+				]
+			},
+			{
+				"name": "set_steering",
+				"return_type": "void",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": false,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+					{
+						"name": "steering",
 						"type": "float",
 						"has_default_value": false,
 						"default_value": ""
@@ -158609,7 +159031,7 @@
 			"BYTES_TO_VAR": 62,
 			"COLORN": 63,
 			"FUNC_FUNCREF": 50,
-			"FUNC_MAX": 65,
+			"FUNC_MAX": 67,
 			"LOGIC_CLAMP": 47,
 			"LOGIC_MAX": 45,
 			"LOGIC_MIN": 46,
@@ -158636,10 +159058,12 @@
 			"MATH_ISINF": 22,
 			"MATH_ISNAN": 21,
 			"MATH_LERP": 26,
+			"MATH_LERP_ANGLE": 66,
 			"MATH_LINEAR2DB": 39,
 			"MATH_LOG": 19,
 			"MATH_MOVE_TOWARD": 29,
 			"MATH_POLAR2CARTESIAN": 41,
+			"MATH_POSMOD": 65,
 			"MATH_POW": 18,
 			"MATH_RAD2DEG": 38,
 			"MATH_RAND": 32,
@@ -158787,7 +159211,9 @@
 					"BYTES_TO_VAR": 62,
 					"COLORN": 63,
 					"MATH_SMOOTHSTEP": 64,
-					"FUNC_MAX": 65
+					"MATH_POSMOD": 65,
+					"MATH_LERP_ANGLE": 66,
+					"FUNC_MAX": 67
 				}
 			}
 		]
@@ -176575,6 +177001,24 @@
 		]
 	},
 	{
+		"name": "VisualShaderNodeVectorScalarMix",
+		"base_class": "VisualShaderNode",
+		"api_type": "core",
+		"singleton": false,
+		"instanciable": true,
+		"is_reference": true,
+		"constants": {
+		},
+		"properties": [
+		],
+		"signals": [
+		],
+		"methods": [
+		],
+		"enums": [
+		]
+	},
+	{
 		"name": "VisualShaderNodeVectorScalarSmoothStep",
 		"base_class": "VisualShaderNode",
 		"api_type": "core",
@@ -179695,6 +180139,19 @@
 			{
 				"name": "get_main_loop",
 				"return_type": "MainLoop",
+				"is_editor": false,
+				"is_noscript": false,
+				"is_const": true,
+				"is_reverse": false,
+				"is_virtual": false,
+				"has_varargs": false,
+				"is_from_script": false,
+				"arguments": [
+				]
+			},
+			{
+				"name": "get_physics_interpolation_fraction",
+				"return_type": "float",
 				"is_editor": false,
 				"is_noscript": false,
 				"is_const": true,
