@@ -10,7 +10,7 @@ namespace godot {
 // TODO: always assumes little endian
 
 template <uint32_t SAMPLE_RATE, uint32_t CHANNEL_COUNT, uint32_t MILLISECONDS_PER_PACKET>
-class OpusCodec {
+class OpusCodec : public Reference {
 private:
     static const uint32_t APPLICATION = OPUS_APPLICATION_VOIP;
 

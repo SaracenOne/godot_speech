@@ -171,8 +171,8 @@ PoolVector2Array VoiceManager::decompress_buffer(const PoolByteArray p_compresse
 }
 
 void VoiceManager::_init() {
-    mutex = Mutex::_new();
-    opus_codec = new OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET>(); // ???
+    mutex = Ref<Mutex>(Mutex::_new());
+    opus_codec = Ref<OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET>>();
 }
 
 void VoiceManager::_ready() {
@@ -192,7 +192,6 @@ void VoiceManager::_notification(int p_what) {
     switch(p_what) {
         case NOTIFICATION_EXIT_TREE:
             if(!Engine::get_singleton()->is_editor_hint()) {
-                Godot::print(String("VoiceManager::_notification::exit_tree"));
                 if(audio_server != NULL) {
                     stop();
                     
@@ -209,8 +208,4 @@ void VoiceManager::_notification(int p_what) {
             }
         break;
     }
-}
-
-void VoiceManager::free() {
-    delete opus_codec;
 }
