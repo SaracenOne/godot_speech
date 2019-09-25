@@ -171,8 +171,9 @@ PoolVector2Array VoiceManager::decompress_buffer(const PoolByteArray p_compresse
 }
 
 void VoiceManager::_init() {
-    mutex = Ref<Mutex>(Mutex::_new());
-    opus_codec = Ref<OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET>>();
+    Godot::print(String("VoiceManager::_init"));
+
+    mutex.instance();
 }
 
 void VoiceManager::_ready() {
@@ -206,6 +207,16 @@ void VoiceManager::_notification(int p_what) {
                     audio_server = NULL;
                 }
             }
-        break;
+			break;
     }
+}
+
+VoiceManager::VoiceManager() {
+    Godot::print(String("VoiceManager::VoiceManager"));
+    opus_codec = new OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET>();
+}
+
+VoiceManager::~VoiceManager() {
+    Godot::print(String("VoiceManager::~VoiceManager"));
+    delete opus_codec;
 }

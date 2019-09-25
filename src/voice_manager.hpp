@@ -14,7 +14,7 @@ namespace godot {
 
 class VoiceManager : public Node {
     GODOT_CLASS(VoiceManager, Node)
-    Ref<Mutex> mutex = NULL; // Does this actually get freed?
+    Ref<Mutex> mutex;
     //
     static const uint32_t MIX_BUFFER_COUNT = 4;
 
@@ -23,7 +23,7 @@ class VoiceManager : public Node {
     static const uint32_t MILLISECONDS_PER_PACKET = 100;
     static const uint32_t BUFFER_FRAME_COUNT = VOICE_SAMPLE_RATE / MILLISECONDS_PER_PACKET;
 
-    Ref<OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET>> opus_codec = NULL;
+    OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET> *opus_codec;
     
     const uint32_t BUFFER_BYTE_COUNT = sizeof(uint16_t);
     bool active = false;
@@ -53,6 +53,9 @@ public:
     void _init();
     void _ready();
     void _notification(int p_what);
+
+    VoiceManager();
+    ~VoiceManager();
 };
 
 }; // namespace godot

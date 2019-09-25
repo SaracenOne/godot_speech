@@ -10,7 +10,7 @@ namespace godot {
 // TODO: always assumes little endian
 
 template <uint32_t SAMPLE_RATE, uint32_t CHANNEL_COUNT, uint32_t MILLISECONDS_PER_PACKET>
-class OpusCodec : public Reference {
+class OpusCodec {
 private:
     static const uint32_t APPLICATION = OPUS_APPLICATION_VOIP;
 
@@ -93,6 +93,7 @@ public:
 	}
 
 	OpusCodec() {
+		Godot::print(String("OpusCodec::OpusCodec"));
 		int error = 0;
 		encoder = opus_encoder_create(SAMPLE_RATE, CHANNEL_COUNT, APPLICATION, &error);
 		if (error != OPUS_OK) {
@@ -106,6 +107,7 @@ public:
 	}
 
 	~OpusCodec() {
+		Godot::print(String("OpusCodec::~OpusCodec"));
 		opus_encoder_destroy(encoder);
 		opus_decoder_destroy(decoder);
 	}
