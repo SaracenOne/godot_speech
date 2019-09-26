@@ -34,9 +34,7 @@ void VoiceManager::_mix_audio() {
             uint32_t remaining_frames = get_audio_server_mix_frames();
             
             while(remaining_frames > 0) {
-                audio_server->lock();
                 remaining_frames = _mix_internal(audio_server, remaining_frames, BUFFER_FRAME_COUNT, write_buffer, current_mix_buffer_position, capture_ofs);
-                audio_server->unlock();
                 
                 if(current_mix_buffer_position == 0) {
                     emit_signal("audio_packet_processed", mix_buffer);
@@ -49,9 +47,11 @@ void VoiceManager::_mix_audio() {
 
 // returns remaining processed frames
 uint32_t VoiceManager::_mix_internal(AudioServer *p_audio_server, const uint32_t &p_frame_count, const uint32_t p_buffer_size, int8_t *p_buffer_out, uint32_t &p_buffer_position_out, uint32_t &p_capture_offset_out) {
-	PoolIntArray capture_buffer = p_audio_server->get_capture_buffer();
+	p_audio_server->lock();
+    PoolIntArray capture_buffer = p_audio_server->get_capture_buffer();
 	uint32_t capture_size = p_audio_server->get_capture_size();
 	uint32_t mix_rate = p_audio_server->get_mix_rate();
+    p_audio_server->unlock();
 
     uint32_t playback_delay = std::min<uint32_t>(((50 * mix_rate) / 1000) * 2, capture_buffer.size() >> 1);
 
