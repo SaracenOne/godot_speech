@@ -5,6 +5,7 @@
 using namespace godot;
 
 #define SET_BUFFER_16_BIT(buffer, buffer_pos, sample) ((int16_t *)buffer)[buffer_pos] = sample >> 16;
+#define STEREO_CHANNEL_COUNT 2
 
 void VoiceManager::_register_methods() {
     register_method("_init", &_init);
@@ -69,16 +70,13 @@ uint32_t VoiceManager::_mix_internal(AudioServer *p_audio_server, const uint32_t
 	} else {
 		for (int i = 0; i < p_frame_count; i++) {
 			if (capture_size > p_capture_offset_out && (int)p_capture_offset_out < capture_buffer.size()) {
-				int32_t l = (capture_buffer[p_capture_offset_out++]);
-				if ((int)p_capture_offset_out >= capture_buffer.size()) {
-					p_capture_offset_out = 0;
-				}
-				int32_t r = (capture_buffer[p_capture_offset_out++]);
-				if ((int)p_capture_offset_out >= capture_buffer.size()) {
-					p_capture_offset_out = 0;
-				}
-
-                int32_t mono = (l * 0.5) + (r * 0.5);
+                int32_t mono = 0;
+                for (int j = 0; j < STEREO_CHANNEL_COUNT; j++) {
+                    mono = (capture_buffer[p_capture_offset_out++]) * 0.5;
+                    if ((int)p_capture_offset_out >= capture_buffer.size()) {
+                        p_capture_offset_out = 0;
+                    }
+                }
 
                 SET_BUFFER_16_BIT(p_buffer_out, p_buffer_position_out, mono)
                 p_buffer_position_out++;
@@ -152,10 +150,10 @@ PoolVector2Array VoiceManager::_16_pcm_mono_to_real_stereo(const PoolByteArray p
     for(int i = 0; i < frame_count; i++) {
         float value = ((float)*src_buffer_ptr) / 32768.0f;
 
-        *real_buffer_ptr = value;
+        *(real_buffer_ptr+0) = value;
         *(real_buffer_ptr+1) = value;
 
-        real_buffer_ptr += 2;
+        real_buffer_ptr+=2;
         src_buffer_ptr++;
     }
 
