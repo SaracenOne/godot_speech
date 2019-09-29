@@ -3,7 +3,7 @@
 
 #include <Godot.hpp>
 
-#include "opus.h"
+#include <opus.h>
 
 namespace godot {
 

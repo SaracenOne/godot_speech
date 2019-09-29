@@ -1,8 +1,8 @@
 #!python
 import os
 
-opus_path = ARGUMENTS.get("opus_path", "external/opus")
-opus_library_path = ARGUMENTS.get("opus_library", "external/opus")
+opus_path = ARGUMENTS.get("opus_path", "/usr/include/opus")
+opus_library_path = ARGUMENTS.get("opus_library", "")
 
 # platform= makes it in line with Godots scons file, keeping p for backwards compatibility
 platform = ARGUMENTS.get("p", "linux")
@@ -56,7 +56,7 @@ env.Append(CPPPATH=[godot_headers_path,
 	godot_bindings_path + '/include/',
 	godot_bindings_path + '/include/core/',
 	godot_bindings_path + '/include/gen/',
-	opus_path + '/include/'])
+	opus_path])
 
 env.Append(LIBS=[add_suffix(['libgodot-cpp']), opus_library_path])
 env.Append(LIBPATH=[godot_bindings_path + '/bin/'])

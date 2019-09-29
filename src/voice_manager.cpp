@@ -8,17 +8,17 @@ using namespace godot;
 #define STEREO_CHANNEL_COUNT 2
 
 void VoiceManager::_register_methods() {
-    register_method("_init", &_init);
-    register_method("_ready", &_ready);
-    register_method("_notification", &_notification);
+    register_method("_init", &VoiceManager::_init);
+    register_method("_ready", &VoiceManager::_ready);
+    register_method("_notification", &VoiceManager::_notification);
     
-    register_method("_mix_audio", &_mix_audio);
+    register_method("_mix_audio", &VoiceManager::_mix_audio);
 
-    register_method("start", &start);
-    register_method("stop", &stop);
+    register_method("start", &VoiceManager::start);
+    register_method("stop", &VoiceManager::stop);
 
-    register_method("compress_buffer", &compress_buffer);
-    register_method("decompress_buffer", &decompress_buffer);
+    register_method("compress_buffer", &VoiceManager::compress_buffer);
+    register_method("decompress_buffer", &VoiceManager::decompress_buffer);
 
     register_signal<VoiceManager>("audio_packet_processed", "packet", GODOT_VARIANT_TYPE_POOL_BYTE_ARRAY);
 }
