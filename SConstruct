@@ -2,7 +2,7 @@
 import os
 
 opus_path = ARGUMENTS.get("opus_path", "/usr/include/opus")
-opus_library_path = ARGUMENTS.get("opus_library", "")
+opus_library_path = ARGUMENTS.get("opus_library", "opus")
 
 # platform= makes it in line with Godots scons file, keeping p for backwards compatibility
 platform = ARGUMENTS.get("p", "linux")
