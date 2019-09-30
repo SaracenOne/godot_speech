@@ -12,17 +12,17 @@ namespace godot {
 template <uint32_t SAMPLE_RATE, uint32_t CHANNEL_COUNT, uint32_t MILLISECONDS_PER_PACKET>
 class OpusCodec {
 private:
-    static const uint32_t APPLICATION = OPUS_APPLICATION_VOIP;
+	static const uint32_t APPLICATION = OPUS_APPLICATION_VOIP;
 
-    static const int BUFFER_FRAME_COUNT = SAMPLE_RATE / MILLISECONDS_PER_PACKET;
+	static const int BUFFER_FRAME_COUNT = SAMPLE_RATE / MILLISECONDS_PER_PACKET;
 	
-    static const int INTERNAL_BUFFER_SIZE = (3*1276);
-    unsigned char internal_buffer[INTERNAL_BUFFER_SIZE];
+	static const int INTERNAL_BUFFER_SIZE = (3*1276);
+	unsigned char internal_buffer[INTERNAL_BUFFER_SIZE];
 
-    OpusEncoder *encoder = NULL;
-    OpusDecoder *decoder = NULL;
+	OpusEncoder *encoder = NULL;
+	OpusDecoder *decoder = NULL;
 
-    static void _register_methods();
+	static void _register_methods();
 
 protected:
 	void print_opus_error(int error_code) {
