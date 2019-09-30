@@ -182,8 +182,14 @@ void VoiceManager::_ready() {
 		mutex->unlock();
 
 		audio_server->lock();
-		audio_server->connect("audio_mix_callback", this, "_mix_audio");
+		Error audio_mix_callback_result = audio_server->connect("audio_mix_callback", this, "_mix_audio");
 		audio_server->unlock();
+
+		if (audio_mix_callback_result != Error::OK) {
+			Godot::print_error("Could not connect audio_mix_callback!", __FUNCTION__, __FILE__, __LINE__);
+		}
+	} else {
+		Godot::print_error("Could not get AudioServer singleton!", __FUNCTION__, __FILE__, __LINE__);
 	}
 }
 
