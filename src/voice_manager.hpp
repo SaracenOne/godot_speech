@@ -8,7 +8,9 @@
 #include <ProjectSettings.hpp>
 #include <Mutex.hpp>
 
+#include "samplerate.h"
 #include "opus_codec.hpp"
+
 
 namespace godot {
 
@@ -16,7 +18,6 @@ class VoiceManager : public Node {
 	GODOT_CLASS(VoiceManager, Node)
 	Ref<Mutex> mutex;
 	//
-	static const uint32_t MIX_BUFFER_COUNT = 4;
 
 	static const uint32_t VOICE_SAMPLE_RATE = 48000;
 	static const uint32_t CHANNEL_COUNT = 1;
@@ -30,11 +31,20 @@ class VoiceManager : public Node {
 private:
 	AudioServer *audio_server = NULL;
 	PoolByteArray mix_buffer;
-	uint32_t current_mix_buffer_position = 0;
+
+	PoolRealArray mono_buffer;
+	PoolRealArray resampled_buffer;
+	uint32_t resampled_buffer_offset = 0;
+
+	// LibResample
+	SRC_STATE *libresample_state;
+	int libresample_error;
 
 	uint32_t capture_ofs = 0;
 public:
 	static void _register_methods();
+
+	uint32_t _resample_audio_buffer(const float *p_src, const uint32_t p_src_frame_count, float *p_dst, const uint32_t p_dst_frame_count, double p_src_ratio);
 	static PoolByteArray _get_buffer_copy(const PoolByteArray p_mix_buffer);
 
 	void start();
@@ -42,13 +52,19 @@ public:
 
 	uint32_t get_audio_server_mix_frames();
 
+	static uint32_t _get_capture_block(
+		AudioServer *p_audio_server,
+		const uint32_t &p_mix_frame_count,
+		float *p_process_buffer_out,
+		uint32_t &p_capture_offset_out);
+
 	void _mix_audio();
-	static uint32_t _mix_internal(AudioServer *p_audio_server, const uint32_t &p_frame_count, const uint32_t p_buffer_size, int8_t *p_buffer_out, uint32_t &p_buffer_position_out, uint32_t &p_capture_offset_out);
 
 	static PoolVector2Array _16_pcm_mono_to_real_stereo(const PoolByteArray p_src_buffer);
 
-	PoolByteArray compress_buffer(const PoolByteArray p_pcm_buffer);
-	PoolVector2Array decompress_buffer(const PoolByteArray p_compressed_buffer);
+	// Using PoolVectors directly on register method types seems to cause a memory leak!
+	virtual PoolByteArray compress_buffer(PoolByteArray p_pcm_buffer);
+	virtual PoolVector2Array decompress_buffer(PoolByteArray p_compressed_buffer);
 
 	void _init();
 	void _ready();
