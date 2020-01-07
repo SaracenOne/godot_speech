@@ -32,10 +32,35 @@ uint32_t VoiceManager::get_audio_server_mix_frames() {
 	return 1024; // TODO: expose this
 }
 
-uint32_t VoiceManager::_resample_audio_buffer(const float *p_src, const uint32_t p_src_frame_count, float *p_dst, const uint32_t p_dst_frame_count, const double p_src_ratio) {
-	memcpy(p_dst, p_src, p_src_frame_count * sizeof(float));
+uint32_t VoiceManager::_resample_audio_buffer(
+	const float *p_src,
+	const uint32_t p_src_frame_count,
+	const uint32_t p_src_samplerate,
+	const uint32_t p_target_samplerate,
+	float *p_dst) {
 
-	return p_src_frame_count;
+	if (p_src_samplerate != p_target_samplerate) {
+		SRC_DATA src_data;
+
+		src_data.data_in = p_src;
+		src_data.data_out = p_dst;
+
+		src_data.input_frames = p_src_frame_count;
+		src_data.output_frames = p_src_frame_count * 4;
+
+		src_data.src_ratio = (double)p_target_samplerate / (double)p_src_samplerate;
+		src_data.end_of_input = 0;
+
+		int error = src_process(libresample_state, &src_data);
+		if (error != 0) {
+			Godot::print_error("resample_error!", __FUNCTION__, __FILE__, __LINE__);
+			return 0;
+		}
+		return src_data.output_frames_gen;
+	} else {
+		memcpy(p_dst, p_src, p_src_frame_count * sizeof(float));
+		return p_src_frame_count;
+	}
 }
 
 uint32_t VoiceManager::_get_capture_block(AudioServer *p_audio_server,
@@ -96,11 +121,11 @@ void VoiceManager::_mix_audio() {
 			_get_capture_block(audio_server, mix_frame_count, mono_buffer.write().ptr(), capture_ofs);
 			
 			uint32_t resampled_frame_count = resampled_buffer_offset + _resample_audio_buffer(
-				mono_buffer.read().ptr(),
-				mix_frame_count,
-				resampled_buffer.write().ptr() + resampled_buffer_offset,
-				mix_frame_count * resample_ratio,
-				resample_ratio);
+				mono_buffer.read().ptr(), // Pointer to source buffer
+				mix_frame_count, // Size of source buffer * sizeof(float)
+				mix_rate, // Source sample rate
+				VOICE_SAMPLE_RATE, // Target sample rate
+				resampled_buffer.write().ptr() + resampled_buffer_offset);
 			
 			resampled_buffer_offset = 0;
 

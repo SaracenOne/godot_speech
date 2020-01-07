@@ -44,7 +44,11 @@ private:
 public:
 	static void _register_methods();
 
-	uint32_t _resample_audio_buffer(const float *p_src, const uint32_t p_src_frame_count, float *p_dst, const uint32_t p_dst_frame_count, double p_src_ratio);
+	uint32_t _resample_audio_buffer(const float *p_src,
+		const uint32_t p_src_frame_count,
+		const uint32_t p_src_samplerate,
+		const uint32_t p_target_samplerate,
+		float *p_dst);
 	static PoolByteArray _get_buffer_copy(const PoolByteArray p_mix_buffer);
 
 	void start();
