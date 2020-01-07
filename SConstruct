@@ -4,6 +4,9 @@ import os
 opus_path = ARGUMENTS.get("opus_path", "/usr/include/opus")
 opus_library_path = ARGUMENTS.get("opus_library", "opus")
 
+libsamplerate_path = ARGUMENTS.get("libsamplerate_path", "/usr/include/libsamplerate/src")
+libsamplerate_library_path = ARGUMENTS.get("libsamplerate_library", "libsamplerate")
+
 # platform= makes it in line with Godots scons file, keeping p for backwards compatibility
 platform = ARGUMENTS.get("p", "linux")
 platform = ARGUMENTS.get("platform", platform)
@@ -38,11 +41,12 @@ elif platform == "linux":
     env.Append(LINKFLAGS = ['-Wl,-R,\'$$ORIGIN\''])
 elif platform == "windows":
     # need to add detection of msvc vs mingw, this is for msvc...
-    env.Append(LINKFLAGS = ['/WX'])
     if target == "debug":
-        env.Append(CCFLAGS = ['-EHsc', '-D_DEBUG', '/MDd'])
+        env.Append(CCFLAGS = ['-EHsc', '-D_DEBUG', '/MDd', '/Zi'])
+        env.Append(LINKFLAGS = ['/WX', '/DEBUG:FULL'])
     else:
         env.Append(CCFLAGS = ['-O2', '-EHsc', '-DNDEBUG', '/MD'])
+        env.Append(LINKFLAGS = ['/WX'])
 
 def add_sources(sources, dir):
     for f in os.listdir(dir):
@@ -56,9 +60,10 @@ env.Append(CPPPATH=[godot_headers_path,
 	godot_bindings_path + '/include/',
 	godot_bindings_path + '/include/core/',
 	godot_bindings_path + '/include/gen/',
-	opus_path])
+	opus_path,
+	libsamplerate_path])
 
-env.Append(LIBS=[add_suffix(['libgodot-cpp']), opus_library_path])
+env.Append(LIBS=[add_suffix(['libgodot-cpp']), opus_library_path, libsamplerate_library_path])
 env.Append(LIBPATH=[godot_bindings_path + '/bin/'])
 
 sources = []
