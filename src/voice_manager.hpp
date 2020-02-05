@@ -8,6 +8,12 @@
 #include <ProjectSettings.hpp>
 #include <Mutex.hpp>
 
+#include <AudioEffectStream.hpp>
+#include <StreamAudio.hpp>
+
+#include <AudioStreamPlayer.hpp>
+#include <AudioStreamMicrophone.hpp>
+
 #include "samplerate.h"
 #include "opus_codec.hpp"
 
@@ -27,9 +33,12 @@ class VoiceManager : public Node {
 	OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET> *opus_codec;
     
 	const uint32_t BUFFER_BYTE_COUNT = sizeof(uint16_t);
-	bool active = false;
 private:
 	AudioServer *audio_server = NULL;
+	StreamAudio *stream_audio = NULL;
+	AudioStreamPlayer *audio_stream_player = NULL;
+	
+	uint32_t mix_rate;
 	PoolByteArray mix_buffer;
 
 	PoolRealArray mono_buffer;
@@ -39,8 +48,6 @@ private:
 	// LibResample
 	SRC_STATE *libresample_state;
 	int libresample_error;
-
-	uint32_t capture_ofs = 0;
 public:
 	static void _register_methods();
 
@@ -56,17 +63,16 @@ public:
 
 	uint32_t get_audio_server_mix_frames();
 
-	static uint32_t _get_capture_block(
+	static void _get_capture_block(
 		AudioServer *p_audio_server,
 		const uint32_t &p_mix_frame_count,
-		float *p_process_buffer_out,
-		uint32_t &p_capture_offset_out);
+		const float *p_process_buffer_in,
+		float *p_process_buffer_out);
 
-	void _mix_audio();
+	void _mix_audio(const float *p_process_buffer_in);
 
 	static PoolVector2Array _16_pcm_mono_to_real_stereo(const PoolByteArray p_src_buffer);
 
-	// Using PoolVectors directly on register method types seems to cause a memory leak!
 	virtual PoolByteArray compress_buffer(PoolByteArray p_pcm_buffer);
 	virtual PoolVector2Array decompress_buffer(PoolByteArray p_compressed_buffer);
 
