@@ -145,11 +145,18 @@ void VoiceManager::start() {
 		return;
 	}
     
+	if(!audio_stream_player || !stream_audio) {
+		return;
+	}
+
 	audio_stream_player->play();
 	stream_audio->clear();
 }
 
 void VoiceManager::stop() {
+	if(!audio_stream_player) {
+		return;
+	}
 	audio_stream_player->stop();
 }
 
@@ -202,7 +209,8 @@ void VoiceManager::_ready() {
 				if (bus_name == "Mic") {
 					int effect_count = audio_server->get_bus_effect_count(i);
 					for (int j = 0; j < effect_count; j++) {
-						Ref<AudioEffectStream> audio_effect_stream = audio_server->get_bus_effect(i, j);
+						Ref<AudioEffect> audio_effect = audio_server->get_bus_effect(i, j);
+						Ref<AudioEffectStream> audio_effect_stream = audio_effect;
 						if (audio_effect_stream.is_valid()) {
 							stream_audio = StreamAudio::_new();
 							stream_audio->set_name("StreamAudio");
