@@ -1,4 +1,5 @@
 #include "voice_manager.hpp"
+#include "voice_data_packet.hpp"
 
 #include <algorithm>
 
@@ -25,7 +26,7 @@ void VoiceManager::_register_methods() {
 	register_method("compress_buffer", &VoiceManager::compress_buffer);
 	register_method("decompress_buffer", &VoiceManager::decompress_buffer);
 
-	register_signal<VoiceManager>("audio_packet_processed", "packet", GODOT_VARIANT_TYPE_POOL_BYTE_ARRAY);
+	register_signal<VoiceManager>("voice_data_packet_processed", "packet", GODOT_VARIANT_TYPE_DICTIONARY);
 }
 
 uint32_t VoiceManager::_resample_audio_buffer(
@@ -100,15 +101,24 @@ void VoiceManager::_mix_audio(const float *p_incoming_buffer) {
 			resampled_buffer_offset = 0;
 
 			const float *resampled_buffer_read_ptr = resampled_buffer.read().ptr();
+			double_t sum = 0;
 			while (resampled_buffer_offset < resampled_frame_count - BUFFER_FRAME_COUNT) {
+				sum = 0.0;
 				for (int i = 0; i < BUFFER_FRAME_COUNT; i++) {
 					float frame_float = resampled_buffer_read_ptr[resampled_buffer_offset + i];
 					int frame_integer = int32_t(frame_float * (float)SIGNED_32_BIT_SIZE);
 
+					sum += fabsf(frame_float);
+
 					write_buffer[i*2] = SET_BUFFER_16_BIT(write_buffer, i, frame_integer);
 				}
 
-				emit_signal("audio_packet_processed", mix_buffer);
+				float average = (float)sum / (float)BUFFER_FRAME_COUNT;
+				Dictionary voice_data_packet;
+				voice_data_packet["buffer"] = mix_buffer;
+				voice_data_packet["loudness"] = average;
+
+				emit_signal("voice_data_packet_processed", voice_data_packet);
 				resampled_buffer_offset += BUFFER_FRAME_COUNT;
 			}
 
