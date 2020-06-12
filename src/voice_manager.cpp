@@ -1,5 +1,4 @@
 #include "voice_manager.hpp"
-#include "voice_data_packet.hpp"
 
 #include <algorithm>
 
