@@ -26,7 +26,7 @@ external_path = 'src/external'
 # default to debug build, must be same setting as used for cpp_bindings
 target = ARGUMENTS.get("target", "debug")
 
-platform_suffix = '.' + platform + '.' + "debug" + '.' + target_arch
+platform_suffix = '.' + platform + '.' + target + '.' + target_arch
 
 if ARGUMENTS.get("use_llvm", "no") == "yes":
     env["CXX"] = "clang++"
@@ -69,5 +69,5 @@ env.Append(LIBPATH=[godot_bindings_path + '/bin/'])
 sources = []
 add_sources(sources, "./src")
 
-library = env.SharedLibrary(target='bin/libGodotSpeech', source=sources)
+library = env.SharedLibrary(target='bin/' + target + '/libGodotSpeech', source=sources)
 Default(library)
