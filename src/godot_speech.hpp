@@ -11,7 +11,7 @@
 #include <Mutex.hpp>
 
 #include "mutex_lock.hpp"
-#include "voice_manager.hpp"
+#include "mic_input_processor.hpp"
 
 namespace godot {
 
@@ -28,7 +28,7 @@ class GodotSpeech : public Node {
 	int input_audio_sent_id = 0;
 
 	Node *voice_controller; // TODO: rewrite this in C++
-	VoiceManager *mic_input_processor = NULL;
+	MicInputProcessor *mic_input_processor = NULL;
 
 	struct InputPacket {
 		PoolByteArray compressed_byte_array;
@@ -46,13 +46,13 @@ class GodotSpeech : public Node {
 private:
 	// Assigns the memory to the fixed audio buffer arrays
 	void preallocate_buffers() {
-		input_byte_array.resize(VoiceManager::PCM_BUFFER_SIZE);
-		compression_output_byte_array.resize(VoiceManager::PCM_BUFFER_SIZE);
+		input_byte_array.resize(MicInputProcessor::PCM_BUFFER_SIZE);
+		compression_output_byte_array.resize(MicInputProcessor::PCM_BUFFER_SIZE);
 		for (int i = 0; i < MAX_AUDIO_BUFFER_ARRAY_SIZE; i++) {
-			input_audio_buffer_array[i].compressed_byte_array.resize(VoiceManager::PCM_BUFFER_SIZE);
+			input_audio_buffer_array[i].compressed_byte_array.resize(MicInputProcessor::PCM_BUFFER_SIZE);
 			
 			PoolByteArray pool_byte_array;
-			pool_byte_array.resize(VoiceManager::PCM_BUFFER_SIZE);
+			pool_byte_array.resize(MicInputProcessor::PCM_BUFFER_SIZE);
 
 			output_audio_buffer_array[i]["byte_array"] = pool_byte_array;
 			output_audio_buffer_array[i]["buffer_size"] = 0;
@@ -64,7 +64,7 @@ private:
 	void setup_connections() {
 		if(mic_input_processor) {
 			mic_input_processor->register_mic_input_processed(
-				std::function<void(VoiceManager::MicInput *)>(
+				std::function<void(MicInputProcessor::MicInput *)>(
 					std::bind(&GodotSpeech::mic_input_processed, this, std::placeholders::_1)
 				)
 			);
@@ -84,7 +84,7 @@ private:
 			for(int i = MAX_AUDIO_BUFFER_ARRAY_SIZE-1; i > 0; i--) {
 				memcpy(input_audio_buffer_array[i-1].compressed_byte_array.write().ptr(), 
 				input_audio_buffer_array[i].compressed_byte_array.read().ptr(),
-				VoiceManager::PCM_BUFFER_SIZE);
+				MicInputProcessor::PCM_BUFFER_SIZE);
 
 				input_audio_buffer_array[i-1].buffer_size = input_audio_buffer_array[i].buffer_size;
 			}
@@ -92,15 +92,15 @@ private:
 		}
 	}
 
-	// Is responsible for recieving packets from the VoiceManager and then compressing them
-	void mic_input_processed(VoiceManager::MicInput *p_mic_input) {
+	// Is responsible for recieving packets from the MicInputProcessor and then compressing them
+	void mic_input_processed(MicInputProcessor::MicInput *p_mic_input) {
 		// Copy the raw PCM data from the MicInput packet to the input byte array
 		PoolByteArray *mic_input_byte_array = p_mic_input->pcm_byte_array;
-		memcpy(input_byte_array.write().ptr(), mic_input_byte_array->read().ptr(), VoiceManager::PCM_BUFFER_SIZE);
+		memcpy(input_byte_array.write().ptr(), mic_input_byte_array->read().ptr(), MicInputProcessor::PCM_BUFFER_SIZE);
 
-		// Create a new VoiceManager::CompressedBufferInput to be passed into the compressor
+		// Create a new MicInputProcessor::CompressedBufferInput to be passed into the compressor
 		// and assign it the compressed_byte_array from the input packet
-		VoiceManager::CompressedBufferInput compressed_buffer_input;
+		MicInputProcessor::CompressedBufferInput compressed_buffer_input;
 		compressed_buffer_input.compressed_byte_array = &compression_output_byte_array;
 
 		// Compress the packet
@@ -112,7 +112,11 @@ private:
 			// Find the next valid input packet in the queue
 			InputPacket *input_packet = get_next_valid_input_packet();
 			// Copy the buffer size from the compressed_buffer_input back into the input packet
-			memcpy(input_packet->compressed_byte_array.write().ptr(), compressed_buffer_input.compressed_byte_array->read().ptr(), VoiceManager::PCM_BUFFER_SIZE);
+			memcpy(
+				input_packet->compressed_byte_array.write().ptr(),
+				compressed_buffer_input.compressed_byte_array->read().ptr(),
+				MicInputProcessor::PCM_BUFFER_SIZE);
+
 			input_packet->buffer_size = compressed_buffer_input.buffer_size;
 			input_packet->loudness = p_mic_input->volume;
 		}
@@ -139,7 +143,7 @@ public:
 
 	virtual PoolVector2Array decompress_buffer(const PoolByteArray p_read_byte_array, const int p_read_size, PoolVector2Array p_write_vec2_array) {
 		if(p_read_byte_array.size() < p_read_size) {
-			Godot::print_error("VoiceManager: read byte_array size!", __FUNCTION__, __FILE__, __LINE__);
+			Godot::print_error("MicInputProcessor: read byte_array size!", __FUNCTION__, __FILE__, __LINE__);
 			return PoolVector2Array();
 		}
 
@@ -201,7 +205,7 @@ public:
 	void _init() {
 		if (!Engine::get_singleton()->is_editor_hint()) {
 			preallocate_buffers();
-			mic_input_processor = VoiceManager::_new();
+			mic_input_processor = MicInputProcessor::_new();
 			audio_mutex.instance();
 		}
 	}

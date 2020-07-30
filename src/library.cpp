@@ -1,6 +1,6 @@
 #include <Godot.hpp>
 
-#include "voice_manager.hpp"
+#include "mic_input_processor.hpp"
 #include "godot_speech.hpp"
 
 extern "C" void GDN_EXPORT godot_speech_gdnative_init(godot_gdnative_init_options *o) {
@@ -17,6 +17,6 @@ extern "C" void GDN_EXPORT godot_speech_gdnative_singleton() {
 extern "C" void GDN_EXPORT godot_speech_nativescript_init(void *handle) {
 	godot::Godot::nativescript_init(handle);
 
-	godot::register_class<godot::VoiceManager>();
+	godot::register_class<godot::MicInputProcessor>();
 	godot::register_class<godot::GodotSpeech>();
 }

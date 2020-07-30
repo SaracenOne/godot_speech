@@ -1,5 +1,5 @@
-#ifndef VOICE_MANAGER_HPP
-#define VOICE_MANAGER_HPP
+#ifndef MIC_INPUT_PROCESSOR_HPP
+#define MIC_INPUT_PROCESSOR_HPP
 
 #include <Godot.hpp>
 #include <Node.hpp>
@@ -23,8 +23,8 @@
 
 namespace godot {
 
-class VoiceManager : public Node {
-	GODOT_CLASS(VoiceManager, Node)
+class MicInputProcessor : public Node {
+	GODOT_CLASS(MicInputProcessor, Node)
 	Ref<Mutex> mutex;
 	//
 public:
@@ -127,10 +127,10 @@ public:
 	void _ready();
 	void _notification(int p_what);
 
-	VoiceManager();
-	~VoiceManager();
+	MicInputProcessor();
+	~MicInputProcessor();
 };
 
 }; // namespace godot
 
-#endif // VOICE_MANAGER_HPP
+#endif // MIC_INPUT_PROCESSOR_HPP
