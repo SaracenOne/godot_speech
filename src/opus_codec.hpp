@@ -54,20 +54,19 @@ protected:
 		}
 	}
 public:
-	PoolByteArray encode_buffer(const PoolByteArray &p_pcm_buffer) {
-		PoolByteArray opus_buffer;
+	int encode_buffer(const PoolByteArray *p_pcm_buffer, PoolByteArray *p_output_buffer) {
+		int number_of_bytes = -1;
 
 		if (encoder) {
-			const opus_int16 *pcm_buffer_pointer = reinterpret_cast<const opus_int16 *>(p_pcm_buffer.read().ptr());
+			const opus_int16 *pcm_buffer_pointer = reinterpret_cast<const opus_int16 *>(p_pcm_buffer->read().ptr());
 
 			opus_int32 ret_value = opus_encode(encoder, pcm_buffer_pointer, BUFFER_FRAME_COUNT, internal_buffer, INTERNAL_BUFFER_SIZE);
 			if (ret_value >= 0) {
-				int number_of_bytes = ret_value;
+				number_of_bytes = ret_value;
 
-				opus_buffer.resize(number_of_bytes);
 				if (number_of_bytes > 0) {
-					unsigned char *opus_buffer_pointer = reinterpret_cast<unsigned char *>(opus_buffer.write().ptr());
-					memcpy(opus_buffer_pointer, internal_buffer, number_of_bytes);
+					unsigned char *output_buffer_pointer = reinterpret_cast<unsigned char *>(p_output_buffer->write().ptr());
+					memcpy(output_buffer_pointer, internal_buffer, number_of_bytes);
 				}
 			}
 			else {
@@ -75,21 +74,23 @@ public:
 			}
 		}
 
-		return opus_buffer;
+		return number_of_bytes;
 	}
 
-	PoolByteArray decode_buffer(const PoolByteArray &p_opus_buffer) {
-		PoolByteArray pcm_buffer;
-		pcm_buffer.resize(BUFFER_FRAME_COUNT * sizeof(opus_int16) * CHANNEL_COUNT);
-
-		if (decoder) {
-			opus_int16 *pcm_buffer_pointer = reinterpret_cast<opus_int16 *>(pcm_buffer.write().ptr());
-			const unsigned char *opus_buffer_pointer = reinterpret_cast<const unsigned char *>(p_opus_buffer.read().ptr());
-
-			opus_int32 ret_value = opus_decode(decoder, opus_buffer_pointer, p_opus_buffer.size(), pcm_buffer_pointer, BUFFER_FRAME_COUNT, 0);
+	bool decode_buffer(const PoolByteArray *p_opus_buffer, PoolByteArray *p_output_buffer, const int p_pcm_buffer_size, const int p_opus_buffer_size) {
+		if(p_output_buffer->size() != p_pcm_buffer_size) {
+			Godot::print_error(String("OpusCodec: decode_buffer output_buffer_size mismatch!"), __FUNCTION__, __FILE__, __LINE__);
+			return false;
 		}
 
-		return pcm_buffer;
+		if (decoder) {
+			opus_int16 *output_buffer_pointer = reinterpret_cast<opus_int16 *>(p_output_buffer->write().ptr());
+			const unsigned char *opus_buffer_pointer = reinterpret_cast<const unsigned char *>(p_opus_buffer->read().ptr());
+
+			opus_int32 ret_value = opus_decode(decoder, opus_buffer_pointer, p_opus_buffer_size, output_buffer_pointer, BUFFER_FRAME_COUNT, 0);
+		}
+
+		return true;
 	}
 
 	OpusCodec() {

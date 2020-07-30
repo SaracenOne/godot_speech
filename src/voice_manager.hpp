@@ -14,6 +14,9 @@
 #include <AudioStreamPlayer.hpp>
 #include <AudioStreamMicrophone.hpp>
 
+#include <stdlib.h>
+#include <functional>
+
 #include "samplerate.h"
 #include "opus_codec.hpp"
 
@@ -24,31 +27,51 @@ class VoiceManager : public Node {
 	GODOT_CLASS(VoiceManager, Node)
 	Ref<Mutex> mutex;
 	//
-
+public:
 	static const uint32_t VOICE_SAMPLE_RATE = 48000;
 	static const uint32_t CHANNEL_COUNT = 1;
 	static const uint32_t MILLISECONDS_PER_PACKET = 100;
 	static const uint32_t BUFFER_FRAME_COUNT = VOICE_SAMPLE_RATE / MILLISECONDS_PER_PACKET;
+	static const uint32_t BUFFER_BYTE_COUNT = sizeof(uint16_t);
+	static const uint32_t PCM_BUFFER_SIZE = BUFFER_FRAME_COUNT * BUFFER_BYTE_COUNT * CHANNEL_COUNT;
 
+private:
 	OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET> *opus_codec;
     
-	const uint32_t BUFFER_BYTE_COUNT = sizeof(uint16_t);
 private:
 	AudioServer *audio_server = NULL;
 	StreamAudio *stream_audio = NULL;
 	AudioStreamPlayer *audio_stream_player = NULL;
 	
 	uint32_t mix_rate;
-	PoolByteArray mix_buffer;
+	PoolByteArray mix_byte_array;
 
-	PoolRealArray mono_buffer;
-	PoolRealArray resampled_buffer;
-	uint32_t resampled_buffer_offset = 0;
+	PoolRealArray mono_real_array;
+	PoolRealArray resampled_real_array;
+	uint32_t resampled_real_array_offset = 0;
+
+	PoolByteArray pcm_byte_array_cache;
 
 	// LibResample
 	SRC_STATE *libresample_state;
 	int libresample_error;
 public:
+	struct MicInput {
+		PoolByteArray *pcm_byte_array = NULL;
+		float volume = 0.0;
+	};
+
+	struct CompressedBufferInput {
+		PoolByteArray *compressed_byte_array = NULL;
+		int buffer_size = 0;
+	};
+
+	std::function<void(MicInput *)> mic_input_processed;
+    void register_mic_input_processed(std::function<void(MicInput *)> &callback)
+    {
+        mic_input_processed = callback;
+    }
+
 	static void _register_methods();
 
 	uint32_t _resample_audio_buffer(const float *p_src,
@@ -56,7 +79,6 @@ public:
 		const uint32_t p_src_samplerate,
 		const uint32_t p_target_samplerate,
 		float *p_dst);
-	static PoolByteArray _get_buffer_copy(const PoolByteArray p_mix_buffer);
 
 	void start();
 	void stop();
@@ -71,10 +93,35 @@ public:
 
 	void _mix_audio(const float *p_process_buffer_in);
 
-	static PoolVector2Array _16_pcm_mono_to_real_stereo(const PoolByteArray p_src_buffer);
+	static bool _16_pcm_mono_to_real_stereo(const PoolByteArray *p_src_buffer, PoolVector2Array *p_dst_buffer);
 
-	virtual PoolByteArray compress_buffer(PoolByteArray p_pcm_buffer);
-	virtual PoolVector2Array decompress_buffer(PoolByteArray p_compressed_buffer);
+	virtual bool compress_buffer_internal(const PoolByteArray *p_pcm_byte_array, CompressedBufferInput *p_output_buffer) {
+		p_output_buffer->buffer_size = opus_codec->encode_buffer(p_pcm_byte_array, p_output_buffer->compressed_byte_array);
+		if(p_output_buffer->buffer_size != -1) {
+			return true;
+		}
+
+		return false;
+	}
+
+	virtual bool decompress_buffer_internal(const PoolByteArray *p_read_byte_array, const int p_read_size, PoolVector2Array *p_write_vec2_array) {
+		if (opus_codec->decode_buffer(p_read_byte_array, &pcm_byte_array_cache, PCM_BUFFER_SIZE, p_read_size)) {
+			if(_16_pcm_mono_to_real_stereo(&pcm_byte_array_cache, p_write_vec2_array)) {
+				return true;
+			}
+		}
+		return true;
+	}
+
+	virtual Dictionary compress_buffer(const PoolByteArray p_pcm_byte_array, Dictionary p_output_buffer);
+	virtual PoolVector2Array decompress_buffer(const PoolByteArray p_read_byte_array, const int p_read_size, PoolVector2Array p_write_vec2_array);
+
+	void set_streaming_bus(const String p_name);
+	void set_microphone_bus(const String p_name);
+
+	void set_process_all(bool p_active);
+
+	void _setup();
 
 	void _init();
 	void _ready();

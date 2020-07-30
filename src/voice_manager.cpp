@@ -25,7 +25,10 @@ void VoiceManager::_register_methods() {
 	register_method("compress_buffer", &VoiceManager::compress_buffer);
 	register_method("decompress_buffer", &VoiceManager::decompress_buffer);
 
-	register_signal<VoiceManager>("voice_data_packet_processed", "packet", GODOT_VARIANT_TYPE_DICTIONARY);
+	register_method("set_streaming_bus", &VoiceManager::set_streaming_bus);
+	register_method("set_microphone_bus", &VoiceManager::set_microphone_bus);
+
+	register_signal<VoiceManager>("mic_input_processed", "packet", GODOT_VARIANT_TYPE_DICTIONARY);
 }
 
 uint32_t VoiceManager::_resample_audio_buffer(
@@ -84,68 +87,63 @@ void VoiceManager::_get_capture_block(AudioServer *p_audio_server,
 }
 
 void VoiceManager::_mix_audio(const float *p_incoming_buffer) {
-	mutex->lock();
-	{
-		int8_t *write_buffer = reinterpret_cast<int8_t *>(mix_buffer.write().ptr());
-		if (audio_server) {
-			_get_capture_block(audio_server, RECORD_MIX_FRAMES, p_incoming_buffer, mono_buffer.write().ptr());
-			
-			uint32_t resampled_frame_count = resampled_buffer_offset + _resample_audio_buffer(
-				mono_buffer.read().ptr(), // Pointer to source buffer
-				RECORD_MIX_FRAMES, // Size of source buffer * sizeof(float)
-				mix_rate, // Source sample rate
-				VOICE_SAMPLE_RATE, // Target sample rate
-				resampled_buffer.write().ptr() + resampled_buffer_offset);
-			
-			resampled_buffer_offset = 0;
+	int8_t *write_buffer = reinterpret_cast<int8_t *>(mix_byte_array.write().ptr());
+	if (audio_server) {
+		_get_capture_block(audio_server, RECORD_MIX_FRAMES, p_incoming_buffer, mono_real_array.write().ptr());
+		uint32_t resampled_frame_count = resampled_real_array_offset + _resample_audio_buffer(
+			mono_real_array.read().ptr(), // Pointer to source buffer
+			RECORD_MIX_FRAMES, // Size of source buffer * sizeof(float)
+			mix_rate, // Source sample rate
+			VOICE_SAMPLE_RATE, // Target sample rate
+			resampled_real_array.write().ptr() + resampled_real_array_offset);
+		
+		resampled_real_array_offset = 0;
 
-			const float *resampled_buffer_read_ptr = resampled_buffer.read().ptr();
-			double_t sum = 0;
-			while (resampled_buffer_offset < resampled_frame_count - BUFFER_FRAME_COUNT) {
-				sum = 0.0;
-				for (int i = 0; i < BUFFER_FRAME_COUNT; i++) {
-					float frame_float = resampled_buffer_read_ptr[resampled_buffer_offset + i];
-					int frame_integer = int32_t(frame_float * (float)SIGNED_32_BIT_SIZE);
+		const float *resampled_real_array_read_ptr = resampled_real_array.read().ptr();
+		double_t sum = 0;
+		while (resampled_real_array_offset < resampled_frame_count - BUFFER_FRAME_COUNT) {
+			sum = 0.0;
+			for (int i = 0; i < BUFFER_FRAME_COUNT; i++) {
+				float frame_float = resampled_real_array_read_ptr[resampled_real_array_offset + i];
+				int frame_integer = int32_t(frame_float * (float)SIGNED_32_BIT_SIZE);
 
-					sum += fabsf(frame_float);
+				sum += fabsf(frame_float);
 
-					write_buffer[i*2] = SET_BUFFER_16_BIT(write_buffer, i, frame_integer);
-				}
-
-				float average = (float)sum / (float)BUFFER_FRAME_COUNT;
-				Dictionary voice_data_packet;
-				voice_data_packet["buffer"] = mix_buffer;
-				voice_data_packet["loudness"] = average;
-
-				emit_signal("voice_data_packet_processed", voice_data_packet);
-				resampled_buffer_offset += BUFFER_FRAME_COUNT;
+				write_buffer[i*2] = SET_BUFFER_16_BIT(write_buffer, i, frame_integer);
 			}
+
+			float average = (float)sum / (float)BUFFER_FRAME_COUNT;
 
 			{
-				float *resampled_buffer_write_ptr = resampled_buffer.write().ptr();
-				uint32_t remaining_resampled_buffer_frames = (resampled_frame_count - resampled_buffer_offset);
+				Dictionary voice_data_packet;
+				voice_data_packet["buffer"] = &mix_byte_array;
+				voice_data_packet["loudness"] = average;
 				
-				// Copy the remaining frames to the beginning of the buffer for the next around
-				if (remaining_resampled_buffer_frames > 0) {
-					memcpy(resampled_buffer_write_ptr, resampled_buffer_read_ptr + resampled_buffer_offset, remaining_resampled_buffer_frames * sizeof(float));
-				}
-				resampled_buffer_offset = remaining_resampled_buffer_frames;
+				emit_signal("mic_input_processed", voice_data_packet);
 			}
+
+			if (mic_input_processed) {
+				MicInput mic_input;
+				mic_input.pcm_byte_array = &mix_byte_array;
+				mic_input.volume = average;
+
+				mic_input_processed(&mic_input);
+			}
+
+			resampled_real_array_offset += BUFFER_FRAME_COUNT;
+		}
+
+		{
+			float *resampled_buffer_write_ptr = resampled_real_array.write().ptr();
+			uint32_t remaining_resampled_buffer_frames = (resampled_frame_count - resampled_real_array_offset);
+			
+			// Copy the remaining frames to the beginning of the buffer for the next around
+			if (remaining_resampled_buffer_frames > 0) {
+				memcpy(resampled_buffer_write_ptr, resampled_real_array_read_ptr + resampled_real_array_offset, remaining_resampled_buffer_frames * sizeof(float));
+			}
+			resampled_real_array_offset = remaining_resampled_buffer_frames;
 		}
 	}
-	mutex->unlock();
-}
-
-PoolByteArray VoiceManager::_get_buffer_copy(const PoolByteArray p_mix_buffer) {
-	PoolByteArray out;
-
-	uint32_t mix_buffer_size = p_mix_buffer.size();
-	if(mix_buffer_size > 0) {
-		out.resize(mix_buffer_size);
-		memcpy(out.write().ptr(), p_mix_buffer.read().ptr(), mix_buffer_size);
-	}
-
-	return out;
 }
 
 void VoiceManager::start() {
@@ -169,17 +167,15 @@ void VoiceManager::stop() {
 	audio_stream_player->stop();
 }
 
-PoolVector2Array VoiceManager::_16_pcm_mono_to_real_stereo(const PoolByteArray p_src_buffer) {
-	PoolVector2Array real_audio_frames;
-	uint32_t buffer_size = p_src_buffer.size();
+bool VoiceManager::_16_pcm_mono_to_real_stereo(const PoolByteArray *p_src_buffer, PoolVector2Array *p_dst_buffer) {
+	uint32_t buffer_size = p_src_buffer->size();
 
-	ERR_FAIL_COND_V(buffer_size % 2, real_audio_frames);
+	ERR_FAIL_COND_V(buffer_size % 2, false);
 
 	uint32_t frame_count = buffer_size / 2;
-	real_audio_frames.resize(frame_count);
     
-	const int16_t *src_buffer_ptr = reinterpret_cast<const int16_t *>(p_src_buffer.read().ptr());
-	real_t *real_buffer_ptr = reinterpret_cast<real_t *>(real_audio_frames.write().ptr());
+	const int16_t *src_buffer_ptr = reinterpret_cast<const int16_t *>(p_src_buffer->read().ptr());
+	real_t *real_buffer_ptr = reinterpret_cast<real_t *>(p_dst_buffer->write().ptr());
 
 	for(int i = 0; i < frame_count; i++) {
 		float value = ((float)*src_buffer_ptr) / 32768.0f;
@@ -191,55 +187,121 @@ PoolVector2Array VoiceManager::_16_pcm_mono_to_real_stereo(const PoolByteArray p
 		src_buffer_ptr++;
 	}
 
-	return real_audio_frames;
+	return true;
 }
 
-PoolByteArray VoiceManager::compress_buffer(const PoolByteArray p_pcm_buffer) {
-	return opus_codec->encode_buffer(p_pcm_buffer);
+Dictionary VoiceManager::compress_buffer(const PoolByteArray p_pcm_byte_array, Dictionary p_output_buffer) {
+	if (p_pcm_byte_array.size() != PCM_BUFFER_SIZE) {
+		Godot::print_error("VoiceManager: PCM buffer is incorrect sise!", __FUNCTION__, __FILE__, __LINE__);
+		return p_output_buffer;
+	}
+
+	PoolByteArray *byte_array = NULL;
+	if (!p_output_buffer.has("byte_array")) {
+		byte_array = (PoolByteArray *)&p_output_buffer["byte_array"];
+	}
+
+	if(!byte_array) {
+		PoolByteArray new_byte_array = PoolByteArray();
+		byte_array = &new_byte_array;
+		byte_array->resize(p_pcm_byte_array.size());
+		p_output_buffer["byte_array"] = byte_array;
+	} else {
+		if(byte_array->size() == PCM_BUFFER_SIZE) {
+			Godot::print_error("VoiceManager: output byte array is incorrect sise!", __FUNCTION__, __FILE__, __LINE__);
+			return p_output_buffer;
+		}
+	}
+
+	CompressedBufferInput compressed_buffer_input;
+	compressed_buffer_input.compressed_byte_array = byte_array;
+	compressed_buffer_input.buffer_size = 0;
+
+	if (compress_buffer_internal(&p_pcm_byte_array, &compressed_buffer_input)) {
+		p_output_buffer["buffer_size"] = compressed_buffer_input.buffer_size;
+	} else {
+		p_output_buffer["buffer_size"] = -1;
+	}
+
+	p_output_buffer["byte_array"] = *compressed_buffer_input.compressed_byte_array;
+
+	return p_output_buffer;
 }
 
-PoolVector2Array VoiceManager::decompress_buffer(const PoolByteArray p_compressed_buffer) {
-	return _16_pcm_mono_to_real_stereo(opus_codec->decode_buffer(p_compressed_buffer));
+PoolVector2Array VoiceManager::decompress_buffer(const PoolByteArray p_read_byte_array, const int p_read_size, PoolVector2Array p_write_vec2_array) {
+
+	if(p_read_byte_array.size() < p_read_size) {
+		Godot::print_error("VoiceManager: read byte_array size!", __FUNCTION__, __FILE__, __LINE__);
+		return PoolVector2Array();
+	}
+
+	if (decompress_buffer_internal(&p_read_byte_array, p_read_size, &p_write_vec2_array)) {
+		return p_write_vec2_array;
+	}
+
+	return PoolVector2Array();
+}
+
+void VoiceManager::set_streaming_bus(const String p_name) {
+	if(!audio_server) {
+		return;
+	}
+	int index = audio_server->get_bus_index(p_name);
+	if(index != -1) {
+		int effect_count = audio_server->get_bus_effect_count(index);
+		for (int i = 0; i < effect_count; i++) {
+			Ref<AudioEffect> audio_effect = audio_server->get_bus_effect(index, i);
+			Ref<AudioEffectStream> audio_effect_stream = audio_effect;
+			if (audio_effect_stream.is_valid()) {
+				stream_audio->set_audio_effect_stream(index, i);
+			}
+		}
+	}
+}
+
+void VoiceManager::set_microphone_bus(const String p_name) {
+	if(!audio_server) {
+		return;
+	}
+	int index = audio_server->get_bus_index(p_name);
+	if(index != -1) {
+		audio_stream_player->set_bus(p_name);
+	}
 }
 
 void VoiceManager::_init() {
 	Godot::print(String("VoiceManager::_init"));
 
-	mutex.instance();
+	audio_server = AudioServer::get_singleton();
+	if(audio_server != NULL) {
+		mix_rate = audio_server->get_mix_rate();
+	}
+}
+
+void VoiceManager::_setup() {	
+	stream_audio = StreamAudio::_new();
+	stream_audio->set_name("StreamAudio");
+	add_child(stream_audio);
+
+	audio_stream_player = AudioStreamPlayer::_new();
+	audio_stream_player->set_name("AudioStreamPlayer");
+	audio_stream_player->set_stream(AudioStreamMicrophone::_new());
+	add_child(audio_stream_player);
+}
+
+void VoiceManager::set_process_all(bool p_active) {
+	set_process(p_active);
+	set_physics_process(p_active);
+	set_process_input(p_active);
 }
 
 void VoiceManager::_ready() {
 	if (!Engine::get_singleton()->is_editor_hint()) {
-		if (audio_server) {
-			mix_rate = audio_server->get_mix_rate();
-			int bus_count = audio_server->get_bus_count();
-			for (int i = 0; i < bus_count; i++) {
-				String bus_name = audio_server->get_bus_name(i);
-				if (bus_name == "Mic") {
-					int effect_count = audio_server->get_bus_effect_count(i);
-					for (int j = 0; j < effect_count; j++) {
-						Ref<AudioEffect> audio_effect = audio_server->get_bus_effect(i, j);
-						Ref<AudioEffectStream> audio_effect_stream = audio_effect;
-						if (audio_effect_stream.is_valid()) {
-							stream_audio = StreamAudio::_new();
-							stream_audio->set_name("StreamAudio");
-							stream_audio->set_audio_effect_stream(i, j);
-							add_child(stream_audio);
+		_setup();
 
-							Ref<AudioStreamMicrophone> audio_stream_microphone = AudioStreamMicrophone::_new();
-
-							audio_stream_player = AudioStreamPlayer::_new();
-							audio_stream_player->set_name("AudioStreamPlayer");
-							audio_stream_player->set_stream(audio_stream_microphone);
-							audio_stream_player->set_bus("Mic");
-							add_child(audio_stream_player);
-
-							set_process(true);
-						}
-					}
-				}
-			}
-		}
+		set_process_all(true);
+	} else {
+		set_process_all(false);
 	}
 }
 
@@ -247,18 +309,13 @@ void VoiceManager::_notification(int p_what) {
 	switch(p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			if(!Engine::get_singleton()->is_editor_hint()) {
-				audio_server = AudioServer::get_singleton();
-				if(audio_server != NULL) {
-					mutex->lock();
-					mix_buffer.resize(BUFFER_FRAME_COUNT * BUFFER_BYTE_COUNT);
-					mutex->unlock();
-				}
+				mix_byte_array.resize(BUFFER_FRAME_COUNT * BUFFER_BYTE_COUNT);
 			}
 		break;
 		case NOTIFICATION_EXIT_TREE:
 			if(!Engine::get_singleton()->is_editor_hint()) {
 				stop();
-				mix_buffer.resize(0);
+				mix_byte_array.resize(0);
 				
 				audio_server = NULL;
 			}
@@ -280,8 +337,9 @@ VoiceManager::VoiceManager() {
 	Godot::print(String("VoiceManager::VoiceManager"));
 	opus_codec = new OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET>();
 
-	mono_buffer.resize(RECORD_MIX_FRAMES);
-	resampled_buffer.resize(RECORD_MIX_FRAMES * 4);
+	mono_real_array.resize(RECORD_MIX_FRAMES);
+	resampled_real_array.resize(RECORD_MIX_FRAMES * 4);
+	pcm_byte_array_cache.resize(PCM_BUFFER_SIZE);
 	libresample_state = src_new(SRC_SINC_BEST_QUALITY, CHANNEL_COUNT, &libresample_error);
 }
 
