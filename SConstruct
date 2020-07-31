@@ -42,7 +42,10 @@ elif platform == "linux":
 elif platform == "windows":
     # need to add detection of msvc vs mingw, this is for msvc...
     if target == "debug":
-        env.Append(CCFLAGS = ['-EHsc', '-D_DEBUG', '/MDd', '/Zi'])
+        env.Append(CCFLAGS = ['-EHsc', '-D_DEBUG', '/MDd', '/Zi', '/FS'])
+        env.Append(LINKFLAGS = ['/WX', '/DEBUG:FULL'])
+    elif target == "release_debug":
+        env.Append(CCFLAGS = ['-O2', '-EHsc', '-DNDEBUG', '/MD', '/Zi', '/FS'])
         env.Append(LINKFLAGS = ['/WX', '/DEBUG:FULL'])
     else:
         env.Append(CCFLAGS = ['-O2', '-EHsc', '-DNDEBUG', '/MD'])
