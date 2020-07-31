@@ -1,5 +1,5 @@
-#ifndef MIC_INPUT_PROCESSOR_HPP
-#define MIC_INPUT_PROCESSOR_HPP
+#ifndef SPEECH_PROCESSOR_HPP
+#define SPEECH_PROCESSOR_HPP
 
 #include <Godot.hpp>
 #include <Node.hpp>
@@ -20,11 +20,12 @@
 #include "samplerate.h"
 #include "opus_codec.hpp"
 
+#include "speech_decoder.hpp"
 
 namespace godot {
 
-class MicInputProcessor : public Node {
-	GODOT_CLASS(MicInputProcessor, Node)
+class SpeechProcessor : public Node {
+	GODOT_CLASS(SpeechProcessor, Node)
 	Ref<Mutex> mutex;
 	//
 public:
@@ -56,20 +57,20 @@ private:
 	SRC_STATE *libresample_state;
 	int libresample_error;
 public:
-	struct MicInput {
+	struct SpeechInput {
 		PoolByteArray *pcm_byte_array = NULL;
 		float volume = 0.0;
 	};
 
-	struct CompressedBufferInput {
+	struct CompressedSpeechBuffer {
 		PoolByteArray *compressed_byte_array = NULL;
 		int buffer_size = 0;
 	};
 
-	std::function<void(MicInput *)> mic_input_processed;
-    void register_mic_input_processed(std::function<void(MicInput *)> &callback)
+	std::function<void(SpeechInput *)> speech_processed;
+    void register_speech_processed(std::function<void(SpeechInput *)> &callback)
     {
-        mic_input_processed = callback;
+        speech_processed = callback;
     }
 
 	static void _register_methods();
@@ -95,7 +96,7 @@ public:
 
 	static bool _16_pcm_mono_to_real_stereo(const PoolByteArray *p_src_buffer, PoolVector2Array *p_dst_buffer);
 
-	virtual bool compress_buffer_internal(const PoolByteArray *p_pcm_byte_array, CompressedBufferInput *p_output_buffer) {
+	virtual bool compress_buffer_internal(const PoolByteArray *p_pcm_byte_array, CompressedSpeechBuffer *p_output_buffer) {
 		p_output_buffer->buffer_size = opus_codec->encode_buffer(p_pcm_byte_array, p_output_buffer->compressed_byte_array);
 		if(p_output_buffer->buffer_size != -1) {
 			return true;
@@ -104,8 +105,12 @@ public:
 		return false;
 	}
 
-	virtual bool decompress_buffer_internal(const PoolByteArray *p_read_byte_array, const int p_read_size, PoolVector2Array *p_write_vec2_array) {
-		if (opus_codec->decode_buffer(p_read_byte_array, &pcm_byte_array_cache, PCM_BUFFER_SIZE, p_read_size)) {
+	virtual bool decompress_buffer_internal(
+		SpeechDecoder *speech_decoder,
+		const PoolByteArray *p_read_byte_array,
+		const int p_read_size,
+		PoolVector2Array *p_write_vec2_array) {
+		if (opus_codec->decode_buffer(speech_decoder, p_read_byte_array, &pcm_byte_array_cache, p_read_size, PCM_BUFFER_SIZE)) {
 			if(_16_pcm_mono_to_real_stereo(&pcm_byte_array_cache, p_write_vec2_array)) {
 				return true;
 			}
@@ -113,11 +118,28 @@ public:
 		return true;
 	}
 
-	virtual Dictionary compress_buffer(const PoolByteArray p_pcm_byte_array, Dictionary p_output_buffer);
-	virtual PoolVector2Array decompress_buffer(const PoolByteArray p_read_byte_array, const int p_read_size, PoolVector2Array p_write_vec2_array);
+	virtual Dictionary compress_buffer(
+		const PoolByteArray p_pcm_byte_array,
+		Dictionary p_output_buffer);
+
+	virtual PoolVector2Array decompress_buffer(
+		Ref<SpeechDecoder> p_speech_decoder,
+		const PoolByteArray p_read_byte_array,
+		const int p_read_size,
+		PoolVector2Array p_write_vec2_array);
+
+	Ref<SpeechDecoder> get_speech_decoder() {
+		if(opus_codec) {
+			return opus_codec->get_speech_decoder();
+		} else {
+			return NULL;
+		}
+	}
 
 	void set_streaming_bus(const String p_name);
 	void set_microphone_bus(const String p_name);
+
+	void set_stream(Ref<AudioStream> p_audio_stream);
 
 	void set_process_all(bool p_active);
 
@@ -127,10 +149,10 @@ public:
 	void _ready();
 	void _notification(int p_what);
 
-	MicInputProcessor();
-	~MicInputProcessor();
+	SpeechProcessor();
+	~SpeechProcessor();
 };
 
 }; // namespace godot
 
-#endif // MIC_INPUT_PROCESSOR_HPP
+#endif // SPEECH_PROCESSOR_HPP

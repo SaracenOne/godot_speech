@@ -1,4 +1,4 @@
-#include "mic_input_processor.hpp"
+#include "speech_processor.hpp"
 
 #include <algorithm>
 
@@ -14,24 +14,24 @@ using namespace godot;
 
 #define RECORD_MIX_FRAMES 1024
 
-void MicInputProcessor::_register_methods() {
-	register_method("_init", &MicInputProcessor::_init);
-	register_method("_ready", &MicInputProcessor::_ready);
-	register_method("_notification", &MicInputProcessor::_notification);
+void SpeechProcessor::_register_methods() {
+	register_method("_init", &SpeechProcessor::_init);
+	register_method("_ready", &SpeechProcessor::_ready);
+	register_method("_notification", &SpeechProcessor::_notification);
     
-	register_method("start", &MicInputProcessor::start);
-	register_method("stop", &MicInputProcessor::stop);
+	register_method("start", &SpeechProcessor::start);
+	register_method("stop", &SpeechProcessor::stop);
 
-	register_method("compress_buffer", &MicInputProcessor::compress_buffer);
-	register_method("decompress_buffer", &MicInputProcessor::decompress_buffer);
+	register_method("compress_buffer", &SpeechProcessor::compress_buffer);
+	register_method("decompress_buffer", &SpeechProcessor::decompress_buffer);
 
-	register_method("set_streaming_bus", &MicInputProcessor::set_streaming_bus);
-	register_method("set_microphone_bus", &MicInputProcessor::set_microphone_bus);
+	register_method("set_streaming_bus", &SpeechProcessor::set_streaming_bus);
+	register_method("set_microphone_bus", &SpeechProcessor::set_microphone_bus);
 
-	register_signal<MicInputProcessor>("mic_input_processed", "packet", GODOT_VARIANT_TYPE_DICTIONARY);
+	register_signal<SpeechProcessor>("speech_processed", "packet", GODOT_VARIANT_TYPE_DICTIONARY);
 }
 
-uint32_t MicInputProcessor::_resample_audio_buffer(
+uint32_t SpeechProcessor::_resample_audio_buffer(
 	const float *p_src,
 	const uint32_t p_src_frame_count,
 	const uint32_t p_src_samplerate,
@@ -62,7 +62,7 @@ uint32_t MicInputProcessor::_resample_audio_buffer(
 	}
 }
 
-void MicInputProcessor::_get_capture_block(AudioServer *p_audio_server,
+void SpeechProcessor::_get_capture_block(AudioServer *p_audio_server,
 	const uint32_t &p_mix_frame_count,
 	const float *p_process_buffer_in,
 	float *p_process_buffer_out)
@@ -86,7 +86,7 @@ void MicInputProcessor::_get_capture_block(AudioServer *p_audio_server,
 	}
 }
 
-void MicInputProcessor::_mix_audio(const float *p_incoming_buffer) {
+void SpeechProcessor::_mix_audio(const float *p_incoming_buffer) {
 	int8_t *write_buffer = reinterpret_cast<int8_t *>(mix_byte_array.write().ptr());
 	if (audio_server) {
 		_get_capture_block(audio_server, RECORD_MIX_FRAMES, p_incoming_buffer, mono_real_array.write().ptr());
@@ -114,20 +114,18 @@ void MicInputProcessor::_mix_audio(const float *p_incoming_buffer) {
 
 			float average = (float)sum / (float)BUFFER_FRAME_COUNT;
 
-			{
-				Dictionary voice_data_packet;
-				voice_data_packet["buffer"] = &mix_byte_array;
-				voice_data_packet["loudness"] = average;
-				
-				emit_signal("mic_input_processed", voice_data_packet);
-			}
+			Dictionary voice_data_packet;
+			voice_data_packet["buffer"] = &mix_byte_array;
+			voice_data_packet["loudness"] = average;
+			
+			emit_signal("speech_processed", voice_data_packet);
 
-			if (mic_input_processed) {
-				MicInput mic_input;
-				mic_input.pcm_byte_array = &mix_byte_array;
-				mic_input.volume = average;
+			if (speech_processed) {
+				SpeechInput speech_input;
+				speech_input.pcm_byte_array = &mix_byte_array;
+				speech_input.volume = average;
 
-				mic_input_processed(&mic_input);
+				speech_processed(&speech_input);
 			}
 
 			resampled_real_array_offset += BUFFER_FRAME_COUNT;
@@ -146,7 +144,7 @@ void MicInputProcessor::_mix_audio(const float *p_incoming_buffer) {
 	}
 }
 
-void MicInputProcessor::start() {
+void SpeechProcessor::start() {
 	if (!ProjectSettings::get_singleton()->get("audio/enable_audio_input")) {
 		Godot::print_warning("Need to enable Project settings > Audio > Enable Audio Input option to use capturing.", __FUNCTION__, __FILE__, __LINE__);
 		return;
@@ -160,14 +158,14 @@ void MicInputProcessor::start() {
 	stream_audio->clear();
 }
 
-void MicInputProcessor::stop() {
+void SpeechProcessor::stop() {
 	if(!audio_stream_player) {
 		return;
 	}
 	audio_stream_player->stop();
 }
 
-bool MicInputProcessor::_16_pcm_mono_to_real_stereo(const PoolByteArray *p_src_buffer, PoolVector2Array *p_dst_buffer) {
+bool SpeechProcessor::_16_pcm_mono_to_real_stereo(const PoolByteArray *p_src_buffer, PoolVector2Array *p_dst_buffer) {
 	uint32_t buffer_size = p_src_buffer->size();
 
 	ERR_FAIL_COND_V(buffer_size % 2, false);
@@ -190,9 +188,9 @@ bool MicInputProcessor::_16_pcm_mono_to_real_stereo(const PoolByteArray *p_src_b
 	return true;
 }
 
-Dictionary MicInputProcessor::compress_buffer(const PoolByteArray p_pcm_byte_array, Dictionary p_output_buffer) {
+Dictionary SpeechProcessor::compress_buffer(const PoolByteArray p_pcm_byte_array, Dictionary p_output_buffer) {
 	if (p_pcm_byte_array.size() != PCM_BUFFER_SIZE) {
-		Godot::print_error("MicInputProcessor: PCM buffer is incorrect sise!", __FUNCTION__, __FILE__, __LINE__);
+		Godot::print_error("SpeechProcessor: PCM buffer is incorrect sise!", __FUNCTION__, __FILE__, __LINE__);
 		return p_output_buffer;
 	}
 
@@ -208,41 +206,45 @@ Dictionary MicInputProcessor::compress_buffer(const PoolByteArray p_pcm_byte_arr
 		p_output_buffer["byte_array"] = byte_array;
 	} else {
 		if(byte_array->size() == PCM_BUFFER_SIZE) {
-			Godot::print_error("MicInputProcessor: output byte array is incorrect sise!", __FUNCTION__, __FILE__, __LINE__);
+			Godot::print_error("SpeechProcessor: output byte array is incorrect sise!", __FUNCTION__, __FILE__, __LINE__);
 			return p_output_buffer;
 		}
 	}
 
-	CompressedBufferInput compressed_buffer_input;
-	compressed_buffer_input.compressed_byte_array = byte_array;
-	compressed_buffer_input.buffer_size = 0;
+	CompressedSpeechBuffer compressed_speech_buffer;
+	compressed_speech_buffer.compressed_byte_array = byte_array;
+	compressed_speech_buffer.buffer_size = 0;
 
-	if (compress_buffer_internal(&p_pcm_byte_array, &compressed_buffer_input)) {
-		p_output_buffer["buffer_size"] = compressed_buffer_input.buffer_size;
+	if (compress_buffer_internal(&p_pcm_byte_array, &compressed_speech_buffer)) {
+		p_output_buffer["buffer_size"] = compressed_speech_buffer.buffer_size;
 	} else {
 		p_output_buffer["buffer_size"] = -1;
 	}
 
-	p_output_buffer["byte_array"] = *compressed_buffer_input.compressed_byte_array;
+	p_output_buffer["byte_array"] = *compressed_speech_buffer.compressed_byte_array;
 
 	return p_output_buffer;
 }
 
-PoolVector2Array MicInputProcessor::decompress_buffer(const PoolByteArray p_read_byte_array, const int p_read_size, PoolVector2Array p_write_vec2_array) {
+PoolVector2Array SpeechProcessor::decompress_buffer(
+	Ref<SpeechDecoder> p_speech_decoder,
+	const PoolByteArray p_read_byte_array,
+	const int p_read_size,
+	PoolVector2Array p_write_vec2_array) {
 
 	if(p_read_byte_array.size() < p_read_size) {
-		Godot::print_error("MicInputProcessor: read byte_array size!", __FUNCTION__, __FILE__, __LINE__);
+		Godot::print_error("SpeechProcessor: read byte_array size!", __FUNCTION__, __FILE__, __LINE__);
 		return PoolVector2Array();
 	}
 
-	if (decompress_buffer_internal(&p_read_byte_array, p_read_size, &p_write_vec2_array)) {
+	if (decompress_buffer_internal(p_speech_decoder.ptr(), &p_read_byte_array, p_read_size, &p_write_vec2_array)) {
 		return p_write_vec2_array;
 	}
 
 	return PoolVector2Array();
 }
 
-void MicInputProcessor::set_streaming_bus(const String p_name) {
+void SpeechProcessor::set_streaming_bus(const String p_name) {
 	if(!audio_server) {
 		return;
 	}
@@ -259,7 +261,7 @@ void MicInputProcessor::set_streaming_bus(const String p_name) {
 	}
 }
 
-void MicInputProcessor::set_microphone_bus(const String p_name) {
+void SpeechProcessor::set_microphone_bus(const String p_name) {
 	if(!audio_server) {
 		return;
 	}
@@ -269,8 +271,14 @@ void MicInputProcessor::set_microphone_bus(const String p_name) {
 	}
 }
 
-void MicInputProcessor::_init() {
-	Godot::print(String("MicInputProcessor::_init"));
+void SpeechProcessor::set_stream(Ref<AudioStream> p_audio_stream) {
+	Godot::print(String("SpeechProcessor::set_stream"));
+
+	audio_stream_player->set_stream(AudioStreamMicrophone::_new());
+}
+
+void SpeechProcessor::_init() {
+	Godot::print(String("SpeechProcessor::_init"));
 
 	audio_server = AudioServer::get_singleton();
 	if(audio_server != NULL) {
@@ -278,7 +286,7 @@ void MicInputProcessor::_init() {
 	}
 }
 
-void MicInputProcessor::_setup() {	
+void SpeechProcessor::_setup() {	
 	stream_audio = StreamAudio::_new();
 	stream_audio->set_name("StreamAudio");
 	add_child(stream_audio);
@@ -286,16 +294,17 @@ void MicInputProcessor::_setup() {
 	audio_stream_player = AudioStreamPlayer::_new();
 	audio_stream_player->set_name("AudioStreamPlayer");
 	audio_stream_player->set_stream(AudioStreamMicrophone::_new());
+	
 	add_child(audio_stream_player);
 }
 
-void MicInputProcessor::set_process_all(bool p_active) {
+void SpeechProcessor::set_process_all(bool p_active) {
 	set_process(p_active);
 	set_physics_process(p_active);
 	set_process_input(p_active);
 }
 
-void MicInputProcessor::_ready() {
+void SpeechProcessor::_ready() {
 	if (!Engine::get_singleton()->is_editor_hint()) {
 		_setup();
 
@@ -305,7 +314,7 @@ void MicInputProcessor::_ready() {
 	}
 }
 
-void MicInputProcessor::_notification(int p_what) {
+void SpeechProcessor::_notification(int p_what) {
 	switch(p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			if(!Engine::get_singleton()->is_editor_hint()) {
@@ -333,8 +342,8 @@ void MicInputProcessor::_notification(int p_what) {
 	}
 }
 
-MicInputProcessor::MicInputProcessor() {
-	Godot::print(String("MicInputProcessor::MicInputProcessor"));
+SpeechProcessor::SpeechProcessor() {
+	Godot::print(String("SpeechProcessor::SpeechProcessor"));
 	opus_codec = new OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET>();
 
 	mono_real_array.resize(RECORD_MIX_FRAMES);
@@ -343,9 +352,9 @@ MicInputProcessor::MicInputProcessor() {
 	libresample_state = src_new(SRC_SINC_BEST_QUALITY, CHANNEL_COUNT, &libresample_error);
 }
 
-MicInputProcessor::~MicInputProcessor() {
+SpeechProcessor::~SpeechProcessor() {
 	libresample_state = src_delete(libresample_state);
 
-	Godot::print(String("MicInputProcessor::~MicInputProcessor"));
+	Godot::print(String("SpeechProcessor::~SpeechProcessor"));
 	delete opus_codec;
 }

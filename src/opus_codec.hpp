@@ -1,11 +1,57 @@
 #ifndef OPUS_CODEC_HPP
 #define OPUS_CODEC_HPP
 
-#include <Godot.hpp>
+#include "speech_decoder.hpp"
 
+#include <Godot.hpp>
 #include <opus.h>
 
+#include "macros.hpp"
+
 namespace godot {
+
+#if SPEECH_DECODER_POLYMORPHISM
+class OpusSpeechDecoder : public SpeechDecoder {
+	::OpusDecoder *decoder = NULL;
+
+public:
+	static void _register_methods() {
+	}
+
+	OpusSpeechDecoder() {
+	}
+	~OpusSpeechDecoder() {
+		set_decoder(NULL);
+	}
+
+	void _init() {}
+
+	void set_decoder(::OpusDecoder *p_decoder) {
+		if (!decoder) {
+			opus_decoder_destroy(decoder);
+		}
+		decoder = p_decoder;
+	}
+
+	virtual bool process(
+		const PoolByteArray *p_compressed_buffer,
+		PoolByteArray *p_pcm_output_buffer,
+		const int p_compressed_buffer_size,
+		const int p_pcm_output_buffer_size,
+		const int p_buffer_frame_count)
+	{
+		if (decoder) {
+			opus_int16 *output_buffer_pointer = reinterpret_cast<opus_int16 *>(p_pcm_output_buffer->write().ptr());
+			const unsigned char *opus_buffer_pointer = reinterpret_cast<const unsigned char *>(p_compressed_buffer->read().ptr());
+
+			opus_int32 ret_value = opus_decode(decoder, opus_buffer_pointer, p_compressed_buffer_size, output_buffer_pointer, p_buffer_frame_count, 0);
+			return true;
+		}
+
+		return false;
+	}
+};
+#endif
 
 // TODO: always assumes little endian
 
@@ -20,9 +66,6 @@ private:
 	unsigned char internal_buffer[INTERNAL_BUFFER_SIZE];
 
 	OpusEncoder *encoder = NULL;
-	OpusDecoder *decoder = NULL;
-
-	static void _register_methods();
 
 protected:
 	void print_opus_error(int error_code) {
@@ -54,6 +97,24 @@ protected:
 		}
 	}
 public:
+	Ref<SpeechDecoder> get_speech_decoder() {
+		int error;
+		::OpusDecoder *decoder = opus_decoder_create(SAMPLE_RATE, CHANNEL_COUNT, &error);
+		if (error != OPUS_OK) {
+			Godot::print_error(String("OpusCodec: could not create Opus decoder!"), __FUNCTION__, __FILE__, __LINE__);
+			return NULL;
+		}
+
+#if SPEECH_DECODER_POLYMORPHISM
+		Ref<OpusSpeechDecoder> speech_decoder = OpusSpeechDecoder::_new();
+#else
+		Ref<SpeechDecoder> speech_decoder = SpeechDecoder::_new();
+#endif
+		speech_decoder->set_decoder(decoder);
+
+		return speech_decoder;
+	}
+
 	int encode_buffer(const PoolByteArray *p_pcm_buffer, PoolByteArray *p_output_buffer) {
 		int number_of_bytes = -1;
 
@@ -77,20 +138,19 @@ public:
 		return number_of_bytes;
 	}
 
-	bool decode_buffer(const PoolByteArray *p_opus_buffer, PoolByteArray *p_output_buffer, const int p_pcm_buffer_size, const int p_opus_buffer_size) {
-		if(p_output_buffer->size() != p_pcm_buffer_size) {
+	bool decode_buffer(
+		SpeechDecoder *p_speech_decoder,
+		const PoolByteArray *p_compressed_buffer,
+		PoolByteArray *p_pcm_output_buffer,
+		const int p_compressed_buffer_size,
+		const int p_pcm_output_buffer_size) {
+
+		if(p_pcm_output_buffer->size() != p_pcm_output_buffer_size) {
 			Godot::print_error(String("OpusCodec: decode_buffer output_buffer_size mismatch!"), __FUNCTION__, __FILE__, __LINE__);
 			return false;
 		}
 
-		if (decoder) {
-			opus_int16 *output_buffer_pointer = reinterpret_cast<opus_int16 *>(p_output_buffer->write().ptr());
-			const unsigned char *opus_buffer_pointer = reinterpret_cast<const unsigned char *>(p_opus_buffer->read().ptr());
-
-			opus_int32 ret_value = opus_decode(decoder, opus_buffer_pointer, p_opus_buffer_size, output_buffer_pointer, BUFFER_FRAME_COUNT, 0);
-		}
-
-		return true;
+		return p_speech_decoder->process(p_compressed_buffer, p_pcm_output_buffer, p_compressed_buffer_size, p_pcm_output_buffer_size, BUFFER_FRAME_COUNT);
 	}
 
 	OpusCodec() {
@@ -100,17 +160,11 @@ public:
 		if (error != OPUS_OK) {
 			Godot::print_error(String("OpusCodec: could not create Opus encoder!"), __FUNCTION__, __FILE__, __LINE__);
 		}
-
-		decoder = opus_decoder_create(SAMPLE_RATE, CHANNEL_COUNT, &error);
-		if (error != OPUS_OK) {
-			Godot::print_error(String("OpusCodec: could not create Opus decoder!"), __FUNCTION__, __FILE__, __LINE__);
-		}
 	}
 
 	~OpusCodec() {
 		Godot::print(String("OpusCodec::~OpusCodec"));
 		opus_encoder_destroy(encoder);
-		opus_decoder_destroy(decoder);
 	}
 };
 
