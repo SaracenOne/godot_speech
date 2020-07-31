@@ -1,11 +1,13 @@
 #!python
 import os
 
-opus_path = ARGUMENTS.get("opus_path", "/usr/include/opus")
-opus_library_path = ARGUMENTS.get("opus_library", "opus")
+opus_path = ARGUMENTS.get("opus_path", None)
+opus_library_path = ARGUMENTS.get("opus_library", None)
+use_builtin_opus = not opus_path or not opus_library_path
 
-libsamplerate_path = ARGUMENTS.get("libsamplerate_path", "/usr/include/libsamplerate/src")
-libsamplerate_library_path = ARGUMENTS.get("libsamplerate_library", "libsamplerate")
+libsamplerate_path = ARGUMENTS.get("libsamplerate_path", None)
+libsamplerate_library_path = ARGUMENTS.get("libsamplerate_library", None)
+use_builtin_libsamplerate = not libsamplerate_path or not libsamplerate_library_path
 
 # platform= makes it in line with Godots scons file, keeping p for backwards compatibility
 platform = ARGUMENTS.get("p", "linux")
@@ -14,9 +16,12 @@ target_arch = ARGUMENTS.get('a', ARGUMENTS.get('arch', '64'))
 
 # This makes sure to keep the session environment variables on windows, 
 # that way you can run scons in a vs 2017 prompt and it will find all the required tools
-env = Environment()
 if platform == "windows":
     env = Environment(ENV = os.environ)
+else:
+    env = Environment()
+
+Export("env")
 
 godot_headers_path = ARGUMENTS.get("headers", os.getenv("GODOT_HEADERS", "godot-cpp/godot_headers"))
 godot_bindings_path = ARGUMENTS.get("cpp_bindings", os.getenv("CPP_BINDINGS", "godot-cpp"))
@@ -26,7 +31,7 @@ external_path = 'src/external'
 # default to debug build, must be same setting as used for cpp_bindings
 target = ARGUMENTS.get("target", "debug")
 
-platform_suffix = '.' + platform + '.' + target + '.' + target_arch
+platform_suffix = '.' + platform + '.' + ("release" if target == "release_debug" else target) + '.' + target_arch
 
 if ARGUMENTS.get("use_llvm", "no") == "yes":
     env["CXX"] = "clang++"
@@ -62,14 +67,25 @@ def add_suffix(libs):
 env.Append(CPPPATH=[godot_headers_path,
 	godot_bindings_path + '/include/',
 	godot_bindings_path + '/include/core/',
-	godot_bindings_path + '/include/gen/',
-	opus_path,
-	libsamplerate_path])
+	godot_bindings_path + '/include/gen/'] + 
+        ([opus_path] if not use_builtin_opus else []) +
+        ([libsamplerate_path] if not use_builtin_libsamplerate else []))
 
-env.Append(LIBS=[add_suffix(['libgodot-cpp']), opus_library_path, libsamplerate_library_path])
+env.Append(LIBS=[add_suffix(['libgodot-cpp'])] +
+        ([opus_library_path] if not use_builtin_opus else []) +
+        ([libsamplerate_library_path] if not use_builtin_libsamplerate else []))
+
 env.Append(LIBPATH=[godot_bindings_path + '/bin/'])
 
+env["builtin_opus"] = use_builtin_opus
+env["builtin_libsamplerate"] = use_builtin_libsamplerate
+env["platform"] = platform
+
 sources = []
+env.modules_sources = sources
+
+SConscript("SCsub")
+
 add_sources(sources, "./src")
 
 library = env.SharedLibrary(target='bin/' + target + '/libGodotSpeech', source=sources)
