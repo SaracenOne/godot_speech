@@ -16,7 +16,7 @@ if env['builtin_opus']:
         "src/mlp.c",
         "src/mlp_data.c",
         "src/opus.c",
-        "src/opus_compare.c",
+        # "src/opus_compare.c", # standalone program
         "src/opus_decoder.c",
         "src/opus_encoder.c",
         "src/opus_multistream.c",
@@ -152,7 +152,7 @@ if env['builtin_opus']:
         #"silk/x86/NSQ_sse4_1.c",
         #"silk/x86/VAD_sse4_1.c",
         #"silk/x86/VQ_WMat_EC_sse4_1.c",
-        "silk/x86/x86_silk_map.c",
+        #"silk/x86/x86_silk_map.c",
     ]
 
     opus_sources_silk = []
@@ -240,6 +240,7 @@ if env['builtin_opus']:
         "silk/float",
     ]
     env.Prepend(CPPPATH=[thirdparty_dir + "/" + dir for dir in thirdparty_include_paths])
+    env.Append(CPPDEFINES=["OVERRIDE_celt_fatal"])
 
     if env["platform"] == "android":
         if ("android_arch" in env and env["android_arch"] == "armv7"):

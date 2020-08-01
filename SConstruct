@@ -9,11 +9,6 @@ libsamplerate_path = ARGUMENTS.get("libsamplerate_path", None)
 libsamplerate_library_path = ARGUMENTS.get("libsamplerate_library", None)
 use_builtin_libsamplerate = not libsamplerate_path or not libsamplerate_library_path
 
-# platform= makes it in line with Godots scons file, keeping p for backwards compatibility
-platform = ARGUMENTS.get("p", "linux")
-platform = ARGUMENTS.get("platform", platform)
-target_arch = ARGUMENTS.get('a', ARGUMENTS.get('arch', '64'))
-
 #######################################
 #### godot-cpp/SConstruct #############
 #######################################
@@ -388,10 +383,13 @@ external_path = 'src/external'
 # default to debug build, must be same setting as used for cpp_bindings
 target = ARGUMENTS.get("target", "debug")
 
-platform_suffix = '.' + platform + '.' + ("release" if target == "release_debug" else target) + '.' + target_arch
+if env['bits'] == 'default':
+    env['bits'] = '64' if is64 else '32'
+
+platform_suffix = '.' + env['platform'] + '.' + ("release" if target == "release_debug" else target) + '.' + env["bits"]
 
 # put stuff that is the same for all first, saves duplication 
-if platform == "osx":
+if env["platform"] == "osx":
     platform_suffix = ''
 
 def add_sources(sources, dir):
@@ -417,7 +415,6 @@ env.Append(LIBPATH=[godot_bindings_path + '/bin/'])
 
 env["builtin_opus"] = use_builtin_opus
 env["builtin_libsamplerate"] = use_builtin_libsamplerate
-env["platform"] = platform
 env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
 sources = []
