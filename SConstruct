@@ -120,7 +120,7 @@ opts.Add(EnumVariable(
 opts.Add(PathVariable(
     'headers_dir',
     'Path to the directory containing Godot headers',
-    'godot_headers',
+    'godot-cpp/godot_headers',
     PathVariable.PathIsDir
 ))
 opts.Add(PathVariable(
@@ -193,7 +193,9 @@ if env['platform'] == 'linux':
     if env['use_llvm']:
         env['CXX'] = 'clang++'
 
-    env.Append(CCFLAGS=['-fPIC', '-g', '-std=c++14', '-Wwrite-strings'])
+    env.Append(CCFLAGS=['-fPIC', '-g', '-Wwrite-strings'])
+    env.Append(CFLAGS=['-std=c11'])
+    env.Append(CXXFLAGS=['-std=c++14'])
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
 
     if env['target'] == 'debug':
@@ -217,7 +219,9 @@ elif env['platform'] == 'osx':
             'Only 64-bit builds are supported for the macOS target.'
         )
 
-    env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', 'x86_64'])
+    env.Append(CCFLAGS=['-g', '-arch', 'x86_64'])
+    env.Append(CFLAGS=['-std=c11'])
+    env.Append(CXXFLAGS=['-std=c++14'])
     env.Append(LINKFLAGS=[
         '-arch',
         'x86_64',
@@ -252,7 +256,9 @@ elif env['platform'] == 'ios':
     env['AR'] = compiler_path + 'ar'
     env['RANLIB'] = compiler_path + 'ranlib'
 
-    env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', env['ios_arch'], '-isysroot', sdk_path])
+    env.Append(CCFLAGS=['-g', '-arch', env['ios_arch'], '-isysroot', sdk_path])
+    env.Append(CFLAGS=['-std=c11'])
+    env.Append(CXXFLAGS=['-std=c++14'])
     env.Append(LINKFLAGS=[
         '-arch',
         env['ios_arch'],
@@ -301,6 +307,8 @@ elif env['platform'] == 'windows':
     # Native or cross-compilation using MinGW
     if host_platform == 'linux' or host_platform == 'osx' or env['use_mingw']:
         env.Append(CCFLAGS=['-g', '-O3', '-std=c++14', '-Wwrite-strings'])
+        env.Append(CFLAGS=['-std=c11'])
+        env.Append(CXXFLAGS=['-std=c++14'])
         env.Append(LINKFLAGS=[
             '--static',
             '-Wl,--no-undefined',
@@ -410,6 +418,7 @@ env.Append(LIBPATH=[godot_bindings_path + '/bin/'])
 env["builtin_opus"] = use_builtin_opus
 env["builtin_libsamplerate"] = use_builtin_libsamplerate
 env["platform"] = platform
+env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
 sources = []
 env.modules_sources = sources

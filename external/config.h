@@ -137,10 +137,10 @@
 /* #undef OPUS_CHECK_ASM */
 
 /* Use run-time CPU capabilities detection */
-#define OPUS_HAVE_RTCD 1
+/* #define OPUS_HAVE_RTCD 1 */
 
 /* Compiler supports X86 AVX Intrinsics */
-#define OPUS_X86_MAY_HAVE_AVX 1
+/* #define OPUS_X86_MAY_HAVE_AVX 1 */
 
 /* Compiler supports X86 SSE Intrinsics */
 #define OPUS_X86_MAY_HAVE_SSE 1
@@ -149,7 +149,7 @@
 #define OPUS_X86_MAY_HAVE_SSE2 1
 
 /* Compiler supports X86 SSE4.1 Intrinsics */
-#define OPUS_X86_MAY_HAVE_SSE4_1 1
+/* #define OPUS_X86_MAY_HAVE_SSE4_1 1 */
 
 /* Define if binary requires AVX intrinsics support */
 /* #undef OPUS_X86_PRESUME_AVX */
