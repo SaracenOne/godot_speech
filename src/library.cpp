@@ -6,11 +6,11 @@
 #include "godot_speech.hpp"
 #include "opus_codec.hpp"
 
+extern "C"
 #ifdef __GNUC__
 __attribute__((noreturn))
 #endif
-
-extern "C" void celt_fatal(const char *str, const char *file, int line) {
+void celt_fatal(const char *str, const char *file, int line) {
 	godot::Godot::print_error(godot::String(str), __FUNCTION__, file, line);
 #if defined(_MSC_VER)
 	_set_abort_behavior( 0, _WRITE_ABORT_MSG);
