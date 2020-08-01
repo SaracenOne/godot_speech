@@ -306,7 +306,7 @@ elif env['platform'] == 'windows':
 
     # Native or cross-compilation using MinGW
     if host_platform == 'linux' or host_platform == 'osx' or env['use_mingw']:
-        env.Append(CCFLAGS=['-g', '-O3', '-std=c++14', '-Wwrite-strings'])
+        env.Append(CCFLAGS=['-g', '-O3', '-Wwrite-strings'])
         env.Append(CFLAGS=['-std=c11'])
         env.Append(CXXFLAGS=['-std=c++14'])
         env.Append(LINKFLAGS=[
