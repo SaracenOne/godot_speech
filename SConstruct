@@ -186,6 +186,7 @@ if host_platform == 'windows' and env['platform'] != 'android':
 
 if env['platform'] == 'linux':
     if env['use_llvm']:
+        env['CC'] = 'clang'
         env['CXX'] = 'clang++'
 
     env.Append(CCFLAGS=['-fPIC', '-g', '-Wwrite-strings'])
@@ -207,6 +208,7 @@ if env['platform'] == 'linux':
 
 elif env['platform'] == 'osx':
     # Use Clang on macOS by default
+    env['CC'] = 'clang'
     env['CXX'] = 'clang++'
 
     if env['bits'] == '32':
@@ -286,11 +288,13 @@ elif env['platform'] == 'windows':
     elif host_platform == 'linux' or host_platform == 'osx':
         # Cross-compilation using MinGW
         if env['bits'] == '64':
+            env['CC'] = 'x86_64-w64-mingw32-gcc'
             env['CXX'] = 'x86_64-w64-mingw32-g++'
             env['AR'] = "x86_64-w64-mingw32-ar"
             env['RANLIB'] = "x86_64-w64-mingw32-ranlib"
             env['LINK'] = "x86_64-w64-mingw32-g++"
         elif env['bits'] == '32':
+            env['CC'] = 'i686-w64-mingw32-gcc'
             env['CXX'] = 'i686-w64-mingw32-g++'
             env['AR'] = "i686-w64-mingw32-ar"
             env['RANLIB'] = "i686-w64-mingw32-ranlib"
@@ -301,7 +305,7 @@ elif env['platform'] == 'windows':
 
     # Native or cross-compilation using MinGW
     if host_platform == 'linux' or host_platform == 'osx' or env['use_mingw']:
-        env.Append(CCFLAGS=['-g', '-O3', '-Wwrite-strings'])
+        env.Append(CCFLAGS=['-g', '-O3', '-Wwrite-strings', '-fPIC'])
         env.Append(CFLAGS=['-std=c11'])
         env.Append(CXXFLAGS=['-std=c++14'])
         env.Append(LINKFLAGS=[
@@ -417,6 +421,10 @@ env["builtin_opus"] = use_builtin_opus
 env["builtin_libsamplerate"] = use_builtin_libsamplerate
 env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
+# fix needed on OSX
+def rpath_fix(target, source, env):
+    os.system('install_name_tool -id @rpath/libgodot_speech.dylib {0}'.format(target[0]))
+
 sources = []
 env.modules_sources = sources
 
@@ -424,5 +432,13 @@ SConscript("SCsub")
 
 add_sources(sources, "./src")
 
-library = env.SharedLibrary(target='bin/' + target + '/libGodotSpeech', source=sources)
+dll_extension = ""
+if env['platform'] == "windows":
+    # Override scons default.
+    dll_extension = ".dll"
+
+library = env.SharedLibrary(target='bin/' + target + '/libGodotSpeech' + dll_extension, source=sources)
+if env['platform'] == "osx":
+    env.AddPostAction(library, rpath_fix)
+
 Default(library)
