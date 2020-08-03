@@ -39,8 +39,6 @@ class GodotSpeech : public Node {
 	int current_input_size = 0;
 	PoolByteArray compression_output_byte_array;
 	InputPacket input_audio_buffer_array[MAX_AUDIO_BUFFER_ARRAY_SIZE];
-	// This the area for fixed size dictionaries representing the audio output data as a means of accounting for the fact that PoolArrays duplicate
-	Dictionary output_audio_buffer_array[MAX_AUDIO_BUFFER_ARRAY_SIZE];
 	//
 private:
 	// Assigns the memory to the fixed audio buffer arrays
@@ -49,13 +47,6 @@ private:
 		compression_output_byte_array.resize(SpeechProcessor::PCM_BUFFER_SIZE);
 		for (int i = 0; i < MAX_AUDIO_BUFFER_ARRAY_SIZE; i++) {
 			input_audio_buffer_array[i].compressed_byte_array.resize(SpeechProcessor::PCM_BUFFER_SIZE);
-			
-			PoolByteArray pool_byte_array;
-			pool_byte_array.resize(SpeechProcessor::PCM_BUFFER_SIZE);
-
-			output_audio_buffer_array[i]["byte_array"] = pool_byte_array;
-			output_audio_buffer_array[i]["buffer_size"] = 0;
-			output_audio_buffer_array[i]["loudness"] = 0.0f;
 		}
 	}
 
@@ -86,6 +77,7 @@ private:
 				SpeechProcessor::PCM_BUFFER_SIZE);
 
 				input_audio_buffer_array[i-1].buffer_size = input_audio_buffer_array[i].buffer_size;
+				input_audio_buffer_array[i-1].loudness = input_audio_buffer_array[i].loudness;
 			}
 			return &input_audio_buffer_array[MAX_AUDIO_BUFFER_ARRAY_SIZE-1];
 		}
@@ -161,19 +153,21 @@ public:
 	Array copy_and_clear_buffers() {
 		MutexLock mutex_lock(audio_mutex.ptr());
 		
-		Array array;
-		array.resize(current_input_size);
+		Array output_array;
+		output_array.resize(current_input_size);
 
 		for (int i = 0; i < current_input_size; i++) {
-			output_audio_buffer_array[i]["byte_array"] = input_audio_buffer_array[i].compressed_byte_array;
-			output_audio_buffer_array[i]["buffer_size"] = input_audio_buffer_array[i].buffer_size;
-			output_audio_buffer_array[i]["loudness"] = input_audio_buffer_array[i].loudness;
+			Dictionary dict;
 
-			array[i] = output_audio_buffer_array[i];
+			dict["byte_array"] = input_audio_buffer_array[i].compressed_byte_array;
+			dict["buffer_size"] = input_audio_buffer_array[i].buffer_size;
+			dict["loudness"] = input_audio_buffer_array[i].loudness;
+
+			output_array[i] = dict;
 		}
 		current_input_size = 0;
 
-		return array;
+		return output_array;
 	}
 
 	Ref<SpeechDecoder> get_speech_decoder() {
