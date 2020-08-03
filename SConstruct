@@ -308,15 +308,19 @@ elif env['platform'] == 'windows':
             env["AR"] = mingw_prefix + "gcc-ar"
             env["RANLIB"] = mingw_prefix + "gcc-ranlib"
             env["LINK"] = mingw_prefix + "g++"
+        env["SHCCFLAGS"] = '$CCFLAGS'
 
     # Native or cross-compilation using MinGW
     if host_platform == 'linux' or host_platform == 'osx' or env['use_mingw']:
-        env.Append(CCFLAGS=['-g', '-O3', '-Wwrite-strings', '-fPIC'])
+        env.Append(CCFLAGS=['-g', '-O3', '-Wwrite-strings'])
         env.Append(CFLAGS=['-std=c11'])
         env.Append(CXXFLAGS=['-std=c++14'])
+        if not env['use_llvm']:
+            env.Append(LINKFLAGS=[
+                '-Wl,--no-undefined',
+            ])
         env.Append(LINKFLAGS=[
             '--static',
-            '-Wl,--no-undefined',
             '-static-libgcc',
             '-static-libstdc++',
         ])
