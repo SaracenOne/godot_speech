@@ -301,6 +301,8 @@ elif env['platform'] == 'windows':
             env["AR"] = mingw_prefix + "ar"
             env["RANLIB"] = mingw_prefix + "ranlib"
             env["LINK"] = mingw_prefix + "clang++"
+            env.Append(LINKFLAGS=["-Wl,-pdb="])
+            env.Append(CCFLAGS=["-gcodeview"])
         else:
             env["CC"] = mingw_prefix + "gcc"
             env["AS"] = mingw_prefix + "as"
