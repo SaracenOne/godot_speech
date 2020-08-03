@@ -68,10 +68,10 @@ public:
 	};
 
 	std::function<void(SpeechInput *)> speech_processed;
-    void register_speech_processed(std::function<void(SpeechInput *)> &callback)
-    {
-        speech_processed = callback;
-    }
+	void register_speech_processed(const std::function<void(SpeechInput *)> &callback)
+	{
+		speech_processed = callback;
+	}
 
 	static void _register_methods();
 
