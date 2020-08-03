@@ -285,23 +285,29 @@ elif env['platform'] == 'windows':
         elif env['target'] == 'release':
             env.Append(CCFLAGS=['/Zi', '/O2', '/EHsc', '/DNDEBUG', '/MD', '/FS'])
 
-    elif host_platform == 'linux' or host_platform == 'osx':
+    else:  #if host_platform == 'linux' or host_platform == 'osx':
+        if host_platform == 'windows' and env['use_mingw']:
+            env = env.Clone(tools=['mingw'])
+            env["SPAWN"] = mySpawn
         # Cross-compilation using MinGW
         if env['bits'] == '64':
-            env['CC'] = 'x86_64-w64-mingw32-gcc'
-            env['CXX'] = 'x86_64-w64-mingw32-g++'
-            env['AR'] = "x86_64-w64-mingw32-ar"
-            env['RANLIB'] = "x86_64-w64-mingw32-ranlib"
-            env['LINK'] = "x86_64-w64-mingw32-g++"
+            mingw_prefix = 'x86_64-w64-mingw32-'
         elif env['bits'] == '32':
-            env['CC'] = 'i686-w64-mingw32-gcc'
-            env['CXX'] = 'i686-w64-mingw32-g++'
-            env['AR'] = "i686-w64-mingw32-ar"
-            env['RANLIB'] = "i686-w64-mingw32-ranlib"
-            env['LINK'] = "i686-w64-mingw32-g++"
-    elif host_platform == 'windows' and env['use_mingw']:
-        env = env.Clone(tools=['mingw'])
-        env["SPAWN"] = mySpawn
+            mingw_prefix = 'i686-w64-mingw32-'
+        if env["use_llvm"]:
+            env["CC"] = mingw_prefix + "clang"
+            env["AS"] = mingw_prefix + "as"
+            env["CXX"] = mingw_prefix + "clang++"
+            env["AR"] = mingw_prefix + "ar"
+            env["RANLIB"] = mingw_prefix + "ranlib"
+            env["LINK"] = mingw_prefix + "clang++"
+        else:
+            env["CC"] = mingw_prefix + "gcc"
+            env["AS"] = mingw_prefix + "as"
+            env["CXX"] = mingw_prefix + "g++"
+            env["AR"] = mingw_prefix + "gcc-ar"
+            env["RANLIB"] = mingw_prefix + "gcc-ranlib"
+            env["LINK"] = mingw_prefix + "g++"
 
     # Native or cross-compilation using MinGW
     if host_platform == 'linux' or host_platform == 'osx' or env['use_mingw']:
