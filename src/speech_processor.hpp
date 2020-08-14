@@ -119,12 +119,12 @@ public:
 	}
 
 	virtual Dictionary compress_buffer(
-		const PoolByteArray p_pcm_byte_array,
+		const PoolByteArray &p_pcm_byte_array,
 		Dictionary p_output_buffer);
 
 	virtual PoolVector2Array decompress_buffer(
 		Ref<SpeechDecoder> p_speech_decoder,
-		const PoolByteArray p_read_byte_array,
+		const PoolByteArray &p_read_byte_array,
 		const int p_read_size,
 		PoolVector2Array p_write_vec2_array);
 
@@ -136,8 +136,8 @@ public:
 		}
 	}
 
-	void set_streaming_bus(const String p_name);
-	void set_microphone_bus(const String p_name);
+	void set_streaming_bus(const String &p_name);
+	void set_microphone_bus(const String &p_name);
 
 	void set_stream(Ref<AudioStream> p_audio_stream);
 

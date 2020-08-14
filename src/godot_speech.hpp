@@ -134,7 +134,7 @@ public:
 		register_method("assign_voice_controller", &GodotSpeech::assign_voice_controller);
 	}
 
-	virtual PoolVector2Array decompress_buffer(Ref<SpeechDecoder> p_speech_decoder, const PoolByteArray p_read_byte_array, const int p_read_size, PoolVector2Array p_write_vec2_array) {
+	virtual PoolVector2Array decompress_buffer(Ref<SpeechDecoder> p_speech_decoder, const PoolByteArray &p_read_byte_array, const int p_read_size, PoolVector2Array p_write_vec2_array) {
 		if(p_read_byte_array.size() < p_read_size) {
 			Godot::print_error("PoolVector2Array: read byte_array size!", __FUNCTION__, __FILE__, __LINE__);
 			return PoolVector2Array();
@@ -224,20 +224,22 @@ public:
 	void _notification(int p_what) {
 		if (!Engine::get_singleton()->is_editor_hint()) {
 			switch(p_what) {
-				NOTIFICATION_EXIT_TREE:
+				case NOTIFICATION_EXIT_TREE:
 					speech_processor->queue_free();
+					break;
+				default:
 					break;
 			}
 		}
 	}
 
-	void set_streaming_bus(const String p_name) {
+	void set_streaming_bus(const String &p_name) {
 		if(speech_processor) {
 			speech_processor->set_streaming_bus(p_name);
 		}
 	}
 
-	void set_microphone_bus(const String p_name) {
+	void set_microphone_bus(const String &p_name) {
 		if(speech_processor) {
 			speech_processor->set_microphone_bus(p_name);
 		}

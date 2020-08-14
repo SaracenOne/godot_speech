@@ -13,6 +13,7 @@ using namespace godot;
 #define UNSIGNED_16_BIT_SIZE 65536
 
 #define RECORD_MIX_FRAMES 1024
+#define RESAMPLED_BUFFER_FACTOR sizeof(int)
 
 void SpeechProcessor::_register_methods() {
 	register_method("_init", &SpeechProcessor::_init);
@@ -45,7 +46,7 @@ uint32_t SpeechProcessor::_resample_audio_buffer(
 		src_data.data_out = p_dst;
 
 		src_data.input_frames = p_src_frame_count;
-		src_data.output_frames = p_src_frame_count * 4;
+		src_data.output_frames = p_src_frame_count * RESAMPLED_BUFFER_FACTOR;
 
 		src_data.src_ratio = (double)p_target_samplerate / (double)p_src_samplerate;
 		src_data.end_of_input = 0;
@@ -57,7 +58,7 @@ uint32_t SpeechProcessor::_resample_audio_buffer(
 		}
 		return src_data.output_frames_gen;
 	} else {
-		memcpy(p_dst, p_src, p_src_frame_count * sizeof(float));
+		memcpy(p_dst, p_src, static_cast<size_t>(p_src_frame_count) * sizeof(float));
 		return p_src_frame_count;
 	}
 }
@@ -71,12 +72,12 @@ void SpeechProcessor::_get_capture_block(AudioServer *p_audio_server,
 	// 0.1 second based on the internal sample rate
 	//uint32_t playback_delay = std::min<uint32_t>(((50 * mix_rate) / 1000) * 2, capture_buffer.size() >> 1);
 
-	uint32_t capture_offset = 0;
+	size_t capture_offset = 0;
 	{
-		for (int i = 0; i < p_mix_frame_count; i++) {
+		for (size_t i = 0; i < p_mix_frame_count; i++) {
 			{
 				float mono = 0.0f;
-				for (int j = 0; j < STEREO_CHANNEL_COUNT; j++) {
+				for (size_t j = 0; j < STEREO_CHANNEL_COUNT; j++) {
 					mono += p_process_buffer_in[capture_offset] * 0.5f;
 					capture_offset++;
 				}
@@ -95,7 +96,7 @@ void SpeechProcessor::_mix_audio(const float *p_incoming_buffer) {
 			RECORD_MIX_FRAMES, // Size of source buffer * sizeof(float)
 			mix_rate, // Source sample rate
 			VOICE_SAMPLE_RATE, // Target sample rate
-			resampled_real_array.write().ptr() + resampled_real_array_offset);
+			resampled_real_array.write().ptr() + static_cast<size_t>(resampled_real_array_offset));
 		
 		resampled_real_array_offset = 0;
 
@@ -103,8 +104,8 @@ void SpeechProcessor::_mix_audio(const float *p_incoming_buffer) {
 		double_t sum = 0;
 		while (resampled_real_array_offset < resampled_frame_count - BUFFER_FRAME_COUNT) {
 			sum = 0.0;
-			for (int i = 0; i < BUFFER_FRAME_COUNT; i++) {
-				float frame_float = resampled_real_array_read_ptr[resampled_real_array_offset + i];
+			for (size_t i = 0; i < BUFFER_FRAME_COUNT; i++) {
+				float frame_float = resampled_real_array_read_ptr[static_cast<size_t>(resampled_real_array_offset) + i];
 				int frame_integer = int32_t(frame_float * (float)SIGNED_32_BIT_SIZE);
 
 				sum += fabsf(frame_float);
@@ -137,7 +138,7 @@ void SpeechProcessor::_mix_audio(const float *p_incoming_buffer) {
 			
 			// Copy the remaining frames to the beginning of the buffer for the next around
 			if (remaining_resampled_buffer_frames > 0) {
-				memcpy(resampled_buffer_write_ptr, resampled_real_array_read_ptr + resampled_real_array_offset, remaining_resampled_buffer_frames * sizeof(float));
+				memcpy(resampled_buffer_write_ptr, resampled_real_array_read_ptr + resampled_real_array_offset, static_cast<size_t>(remaining_resampled_buffer_frames) * sizeof(float));
 			}
 			resampled_real_array_offset = remaining_resampled_buffer_frames;
 		}
@@ -188,7 +189,7 @@ bool SpeechProcessor::_16_pcm_mono_to_real_stereo(const PoolByteArray *p_src_buf
 	return true;
 }
 
-Dictionary SpeechProcessor::compress_buffer(const PoolByteArray p_pcm_byte_array, Dictionary p_output_buffer) {
+Dictionary SpeechProcessor::compress_buffer(const PoolByteArray &p_pcm_byte_array, Dictionary p_output_buffer) {
 	if (p_pcm_byte_array.size() != PCM_BUFFER_SIZE) {
 		Godot::print_error("SpeechProcessor: PCM buffer is incorrect size!", __FUNCTION__, __FILE__, __LINE__);
 		return p_output_buffer;
@@ -225,7 +226,7 @@ Dictionary SpeechProcessor::compress_buffer(const PoolByteArray p_pcm_byte_array
 
 PoolVector2Array SpeechProcessor::decompress_buffer(
 	Ref<SpeechDecoder> p_speech_decoder,
-	const PoolByteArray p_read_byte_array,
+	const PoolByteArray &p_read_byte_array,
 	const int p_read_size,
 	PoolVector2Array p_write_vec2_array) {
 
@@ -241,7 +242,7 @@ PoolVector2Array SpeechProcessor::decompress_buffer(
 	return PoolVector2Array();
 }
 
-void SpeechProcessor::set_streaming_bus(const String p_name) {
+void SpeechProcessor::set_streaming_bus(const String &p_name) {
 	if(!audio_server) {
 		return;
 	}
@@ -258,7 +259,7 @@ void SpeechProcessor::set_streaming_bus(const String p_name) {
 	}
 }
 
-void SpeechProcessor::set_microphone_bus(const String p_name) {
+void SpeechProcessor::set_microphone_bus(const String &p_name) {
 	if(!audio_server) {
 		return;
 	}
@@ -344,7 +345,7 @@ SpeechProcessor::SpeechProcessor() {
 	opus_codec = new OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET>();
 
 	mono_real_array.resize(RECORD_MIX_FRAMES);
-	resampled_real_array.resize(RECORD_MIX_FRAMES * 4);
+	resampled_real_array.resize(RECORD_MIX_FRAMES * RESAMPLED_BUFFER_FACTOR);
 	pcm_byte_array_cache.resize(PCM_BUFFER_SIZE);
 	libresample_state = src_new(SRC_SINC_BEST_QUALITY, CHANNEL_COUNT, &libresample_error);
 }
