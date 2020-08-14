@@ -190,7 +190,7 @@ bool SpeechProcessor::_16_pcm_mono_to_real_stereo(const PoolByteArray *p_src_buf
 
 Dictionary SpeechProcessor::compress_buffer(const PoolByteArray p_pcm_byte_array, Dictionary p_output_buffer) {
 	if (p_pcm_byte_array.size() != PCM_BUFFER_SIZE) {
-		Godot::print_error("SpeechProcessor: PCM buffer is incorrect sise!", __FUNCTION__, __FILE__, __LINE__);
+		Godot::print_error("SpeechProcessor: PCM buffer is incorrect size!", __FUNCTION__, __FILE__, __LINE__);
 		return p_output_buffer;
 	}
 
@@ -200,20 +200,17 @@ Dictionary SpeechProcessor::compress_buffer(const PoolByteArray p_pcm_byte_array
 	}
 
 	if(!byte_array) {
-		PoolByteArray new_byte_array = PoolByteArray();
-		byte_array = &new_byte_array;
-		byte_array->resize(p_pcm_byte_array.size());
-		p_output_buffer["byte_array"] = byte_array;
+		Godot::print_error("SpeechProcessor: did not provide valid 'byte_array' in p_output_buffer argument!", __FUNCTION__, __FILE__, __LINE__);
+		return p_output_buffer;
 	} else {
 		if(byte_array->size() == PCM_BUFFER_SIZE) {
-			Godot::print_error("SpeechProcessor: output byte array is incorrect sise!", __FUNCTION__, __FILE__, __LINE__);
+			Godot::print_error("SpeechProcessor: output byte array is incorrect size!", __FUNCTION__, __FILE__, __LINE__);
 			return p_output_buffer;
 		}
 	}
 
 	CompressedSpeechBuffer compressed_speech_buffer;
 	compressed_speech_buffer.compressed_byte_array = byte_array;
-	compressed_speech_buffer.buffer_size = 0;
 
 	if (compress_buffer_internal(&p_pcm_byte_array, &compressed_speech_buffer)) {
 		p_output_buffer["buffer_size"] = compressed_speech_buffer.buffer_size;

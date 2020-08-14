@@ -21,13 +21,13 @@ class GodotSpeech : public Node {
 	static const int MAX_AUDIO_BUFFER_ARRAY_SIZE = 10;
 	
 	PoolByteArray input_byte_array;
-	float volume;
+	float volume = 0.0;
 
 	Ref<Mutex> audio_mutex;
 
 	int input_audio_sent_id = 0;
 
-	Node *voice_controller; // TODO: rewrite this in C++
+	Node *voice_controller = NULL; // TODO: rewrite this in C++
 	SpeechProcessor *speech_processor = NULL;
 
 	struct InputPacket {
