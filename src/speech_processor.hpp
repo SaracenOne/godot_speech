@@ -40,6 +40,8 @@ private:
 	OpusCodec<VOICE_SAMPLE_RATE, CHANNEL_COUNT, MILLISECONDS_PER_PACKET> *opus_codec;
     
 private:
+	uint32_t record_mix_frames_processed = 0;
+
 	AudioServer *audio_server = NULL;
 	StreamAudio *stream_audio = NULL;
 	AudioStreamPlayer *audio_stream_player = NULL;

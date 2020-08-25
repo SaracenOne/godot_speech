@@ -26,6 +26,7 @@ class GodotSpeech : public Node {
 	Ref<Mutex> audio_mutex;
 
 	int input_audio_sent_id = 0;
+	int skipped_audio_packets = 0;
 
 	Node *voice_controller = NULL; // TODO: rewrite this in C++
 	SpeechProcessor *speech_processor = NULL;
@@ -79,6 +80,7 @@ private:
 				input_audio_buffer_array[i-1].buffer_size = input_audio_buffer_array[i].buffer_size;
 				input_audio_buffer_array[i-1].loudness = input_audio_buffer_array[i].loudness;
 			}
+			skipped_audio_packets++;
 			return &input_audio_buffer_array[MAX_AUDIO_BUFFER_ARRAY_SIZE-1];
 		}
 	}
@@ -118,6 +120,9 @@ public:
 		register_method("_ready", &GodotSpeech::_ready);
 		register_method("_notification", &GodotSpeech::_notification);
 
+		register_method("get_skipped_audio_packets", &GodotSpeech::get_skipped_audio_packets);
+		register_method("clear_skipped_audio_packets", &GodotSpeech::clear_skipped_audio_packets);
+
 		register_method("decompress_buffer", &GodotSpeech::decompress_buffer);
 
 		register_method("copy_and_clear_buffers", &GodotSpeech::copy_and_clear_buffers);
@@ -134,7 +139,15 @@ public:
 		register_method("assign_voice_controller", &GodotSpeech::assign_voice_controller);
 	}
 
-	virtual PoolVector2Array decompress_buffer(Ref<SpeechDecoder> p_speech_decoder, const PoolByteArray &p_read_byte_array, const int p_read_size, PoolVector2Array p_write_vec2_array) {
+	int get_skipped_audio_packets() {
+		return skipped_audio_packets;
+	}
+
+	void clear_skipped_audio_packets() {
+		skipped_audio_packets = 0;
+	}
+
+	virtual PoolVector2Array decompress_buffer(Ref<SpeechDecoder> p_speech_decoder, PoolByteArray p_read_byte_array, const int p_read_size, PoolVector2Array p_write_vec2_array) {
 		if(p_read_byte_array.size() < p_read_size) {
 			Godot::print_error("PoolVector2Array: read byte_array size!", __FUNCTION__, __FILE__, __LINE__);
 			return PoolVector2Array();
@@ -182,6 +195,7 @@ public:
 		if (speech_processor) {
 			speech_processor->start();
 			input_audio_sent_id = 0;
+			skipped_audio_packets = 0;
 			return true;
 		}
 
@@ -191,7 +205,6 @@ public:
 	void end_recording() {
 		if (speech_processor) {
 			speech_processor->stop();
-			input_audio_sent_id = 0;
 		}
 		if(voice_controller) {
 			if(voice_controller->has_method("clear_all_player_audio")) {

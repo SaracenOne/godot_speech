@@ -12,7 +12,7 @@ using namespace godot;
 #define SIGNED_16_BIT_SIZE 32767
 #define UNSIGNED_16_BIT_SIZE 65536
 
-#define RECORD_MIX_FRAMES 1024
+#define RECORD_MIX_FRAMES 1024 * 2
 #define RESAMPLED_BUFFER_FACTOR sizeof(int)
 
 void SpeechProcessor::_register_methods() {
@@ -330,9 +330,12 @@ void SpeechProcessor::_notification(int p_what) {
 		case NOTIFICATION_PROCESS:
 			if(!Engine::get_singleton()->is_editor_hint()) {
 				if (stream_audio && audio_stream_player->is_playing()) {
+					// This is pretty ugly, but needed to keep the audio from going out of sync
 					PoolRealArray audio_frames = stream_audio->get_audio_frames(RECORD_MIX_FRAMES);
-					if (audio_frames.size() > 0) {
+					while (audio_frames.size() > 0) {
 						_mix_audio(audio_frames.read().ptr());
+						record_mix_frames_processed++;
+						audio_frames = stream_audio->get_audio_frames(RECORD_MIX_FRAMES);
 					}
 				}
 			}
