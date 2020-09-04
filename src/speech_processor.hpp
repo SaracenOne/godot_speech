@@ -44,7 +44,7 @@ private:
 
 	AudioServer *audio_server = NULL;
 	StreamAudio *stream_audio = NULL;
-	AudioStreamPlayer *audio_stream_player = NULL;
+	AudioStreamPlayer *audio_input_stream_player = NULL;
 	
 	uint32_t mix_rate;
 	PoolByteArray mix_byte_array;
@@ -85,8 +85,6 @@ public:
 
 	void start();
 	void stop();
-
-	uint32_t get_audio_server_mix_frames();
 
 	static void _get_capture_block(
 		AudioServer *p_audio_server,
@@ -139,9 +137,8 @@ public:
 	}
 
 	void set_streaming_bus(const String &p_name);
-	void set_microphone_bus(const String &p_name);
 
-	void set_stream(Ref<AudioStream> p_audio_stream);
+	void set_audio_input_stream_player(AudioStreamPlayer *p_audio_input_stream_player);
 
 	void set_process_all(bool p_active);
 

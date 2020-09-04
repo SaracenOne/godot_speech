@@ -25,7 +25,6 @@ class GodotSpeech : public Node {
 
 	Ref<Mutex> audio_mutex;
 
-	int input_audio_sent_id = 0;
 	int skipped_audio_packets = 0;
 
 	Node *voice_controller = NULL; // TODO: rewrite this in C++
@@ -133,9 +132,9 @@ public:
 		register_method("end_recording", &GodotSpeech::end_recording);
 
 		register_method("set_streaming_bus", &GodotSpeech::set_streaming_bus);
-		register_method("set_microphone_bus", &GodotSpeech::set_microphone_bus);
+		register_method("set_audio_input_stream_player", &GodotSpeech::set_audio_input_stream_player);
 
-		register_property<GodotSpeech, int>("input_audio_sent_id", &GodotSpeech::input_audio_sent_id, 0);
+
 		register_method("assign_voice_controller", &GodotSpeech::assign_voice_controller);
 	}
 
@@ -194,7 +193,6 @@ public:
 	bool start_recording() {
 		if (speech_processor) {
 			speech_processor->start();
-			input_audio_sent_id = 0;
 			skipped_audio_packets = 0;
 			return true;
 		}
@@ -252,11 +250,13 @@ public:
 		}
 	}
 
-	void set_microphone_bus(const String &p_name) {
+
+	void set_audio_input_stream_player(AudioStreamPlayer *p_audio_stream) {
 		if(speech_processor) {
-			speech_processor->set_microphone_bus(p_name);
+			speech_processor->set_audio_input_stream_player(p_audio_stream);
 		}
 	}
+
 
 	GodotSpeech() {};
 	~GodotSpeech() {

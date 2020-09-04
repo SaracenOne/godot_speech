@@ -27,7 +27,7 @@ void SpeechProcessor::_register_methods() {
 	register_method("decompress_buffer", &SpeechProcessor::decompress_buffer);
 
 	register_method("set_streaming_bus", &SpeechProcessor::set_streaming_bus);
-	register_method("set_microphone_bus", &SpeechProcessor::set_microphone_bus);
+	register_method("set_audio_input_stream_player", &SpeechProcessor::set_audio_input_stream_player);
 
 	register_signal<SpeechProcessor>("speech_processed", "packet", GODOT_VARIANT_TYPE_DICTIONARY);
 }
@@ -151,19 +151,19 @@ void SpeechProcessor::start() {
 		return;
 	}
     
-	if(!audio_stream_player || !stream_audio) {
+	if(!audio_input_stream_player || !stream_audio) {
 		return;
 	}
 
-	audio_stream_player->play();
+	audio_input_stream_player->play();
 	stream_audio->clear();
 }
 
 void SpeechProcessor::stop() {
-	if(!audio_stream_player) {
+	if(!audio_input_stream_player) {
 		return;
 	}
-	audio_stream_player->stop();
+	audio_input_stream_player->stop();
 }
 
 bool SpeechProcessor::_16_pcm_mono_to_real_stereo(const PoolByteArray *p_src_buffer, PoolVector2Array *p_dst_buffer) {
@@ -246,6 +246,7 @@ void SpeechProcessor::set_streaming_bus(const String &p_name) {
 	if(!audio_server) {
 		return;
 	}
+	
 	int index = audio_server->get_bus_index(p_name);
 	if(index != -1) {
 		int effect_count = audio_server->get_bus_effect_count(index);
@@ -259,20 +260,13 @@ void SpeechProcessor::set_streaming_bus(const String &p_name) {
 	}
 }
 
-void SpeechProcessor::set_microphone_bus(const String &p_name) {
+
+void SpeechProcessor::set_audio_input_stream_player(AudioStreamPlayer *p_audio_input_stream_player) {
 	if(!audio_server) {
 		return;
 	}
-	int index = audio_server->get_bus_index(p_name);
-	if(index != -1) {
-		audio_stream_player->set_bus(p_name);
-	}
-}
 
-void SpeechProcessor::set_stream(Ref<AudioStream> p_audio_stream) {
-	Godot::print(String("SpeechProcessor::set_stream"));
-
-	audio_stream_player->set_stream(AudioStreamMicrophone::_new());
+	audio_input_stream_player = p_audio_input_stream_player;
 }
 
 void SpeechProcessor::_init() {
@@ -288,12 +282,6 @@ void SpeechProcessor::_setup() {
 	stream_audio = StreamAudio::_new();
 	stream_audio->set_name("StreamAudio");
 	add_child(stream_audio);
-
-	audio_stream_player = AudioStreamPlayer::_new();
-	audio_stream_player->set_name("AudioStreamPlayer");
-	audio_stream_player->set_stream(AudioStreamMicrophone::_new());
-	
-	add_child(audio_stream_player);
 }
 
 void SpeechProcessor::set_process_all(bool p_active) {
@@ -329,7 +317,7 @@ void SpeechProcessor::_notification(int p_what) {
 		break;
 		case NOTIFICATION_PROCESS:
 			if(!Engine::get_singleton()->is_editor_hint()) {
-				if (stream_audio && audio_stream_player->is_playing()) {
+				if (stream_audio && audio_input_stream_player && audio_input_stream_player->is_playing()) {
 					// This is pretty ugly, but needed to keep the audio from going out of sync
 					PoolRealArray audio_frames = stream_audio->get_audio_frames(RECORD_MIX_FRAMES);
 					while (audio_frames.size() > 0) {
